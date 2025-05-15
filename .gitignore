@@ -1,3 +1,7 @@
+.claude
+REFACTORING.md
+tmp/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -109,11 +113,10 @@ ipython_config.py
 
 # pdm
 #   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#pdm.lock
-#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
-#   in version control.
+pdm.lock
+#   pdm stores project-wide configurations in .pdm.toml, but we include it for consistent scripting
 #   https://pdm.fming.dev/latest/usage/project/#working-with-version-control
-.pdm.toml
+# .pdm.toml
 .pdm-python
 .pdm-build/
 
@@ -145,6 +148,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+.mike-cache/
 
 # mypy
 .mypy_cache/
