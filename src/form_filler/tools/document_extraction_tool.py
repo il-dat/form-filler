@@ -34,7 +34,7 @@ class DocumentExtractionTool(BaseTool):
     openai_model: str = Field(default="gpt-4-vision-preview")
 
     # Private attribute for ollama_llm
-    _ollama_llm = PrivateAttr(default=None)  # type: Optional[OllamaLLM]
+    _ollama_llm = PrivateAttr(default=None)  # Will hold OllamaLLM instance
 
     def __init__(
         self,

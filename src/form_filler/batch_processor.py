@@ -9,9 +9,11 @@ import asyncio
 import json
 import logging
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import click
 from rich.console import Console
@@ -64,7 +66,7 @@ class CrewAIBatchProcessor:
         self.logger = logging.getLogger("CrewAIBatchProcessor")
         self.console = Console()
 
-    def add_job(self, source_path: str, form_path: str, output_path: str):
+    def add_job(self, source_path: str, form_path: str, output_path: str) -> BatchJob:
         """Add a job to the batch."""
         job = BatchJob(
             source_path=Path(source_path),
@@ -129,7 +131,7 @@ class CrewAIBatchProcessor:
                 self.logger.info(f"✅ Completed: {job.source_path.name} (Crew: {job.crew_id})")
             else:
                 job.status = "failed"
-                job.error = result.error
+                job.error = str(result.error) if result.error is not None else ""
                 self.logger.error(
                     f"❌ Failed: {job.source_path.name} (Crew: {job.crew_id}) - {result.error}",
                 )
@@ -144,7 +146,9 @@ class CrewAIBatchProcessor:
 
         return job
 
-    def process_all(self, progress_callback=None) -> dict:
+    def process_all(
+        self, progress_callback: Callable[[int, int, BatchJob], None] | None = None
+    ) -> dict[str, Any]:
         """Process all jobs in the batch using ThreadPoolExecutor."""
         if not self.jobs:
             return {"total": 0, "completed": 0, "failed": 0}
@@ -230,10 +234,10 @@ class CrewAIBatchProcessor:
 
         # Calculate average processing time for completed jobs
         completed_jobs = [job for job in self.jobs if job.status == "completed"]
-        avg_time = 0
+        avg_time = 0.0
         if completed_jobs:
             total_job_time = sum(job.end_time - job.start_time for job in completed_jobs)
-            avg_time = total_job_time / len(completed_jobs)
+            avg_time = total_job_time / len(completed_jobs) if completed_jobs else 0.0
 
         return {
             "total": total,
@@ -242,13 +246,13 @@ class CrewAIBatchProcessor:
             "success_rate": (completed / total * 100) if total > 0 else 0,
             "total_time": total_time,
             "average_job_time": avg_time,
-            "jobs_per_second": completed / total_time if total_time > 0 else 0,
+            "jobs_per_second": float(completed) / total_time if total_time > 0 else 0.0,
             "extraction_method": self.extraction_method,
             "text_model": self.text_model,
             "vision_model": self.vision_model if self.extraction_method == "ai" else None,
         }
 
-    def save_report(self, output_path: str, stats: dict):
+    def save_report(self, output_path: str, stats: dict[str, Any]) -> None:
         """Save detailed processing report."""
         report = {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -296,7 +300,14 @@ class CrewAIBatchProcessor:
 @click.option("--max-concurrent", "-c", default=3, help="Maximum concurrent CrewAI processes")
 @click.option("--timeout", "-t", default=300, help="Timeout per job in seconds")
 @click.pass_context
-def batch_cli(ctx, text_model, extraction_method, vision_model, max_concurrent, timeout):
+def batch_cli(
+    ctx: click.Context,
+    text_model: str,
+    extraction_method: str,
+    vision_model: str,
+    max_concurrent: int,
+    timeout: int,
+) -> None:
     """CrewAI batch processing commands for Vietnamese document form filling.
 
     All batch commands display enhanced progress bars with real-time updates on the status
@@ -318,7 +329,14 @@ def batch_cli(ctx, text_model, extraction_method, vision_model, max_concurrent, 
 @click.option("--pattern", "-p", default="**/*.pdf", help="File pattern to match")
 @click.option("--report", "-r", type=click.Path(), help="Save processing report")
 @click.pass_context
-def process_directory(ctx, source_dir, form_template, output_dir, pattern, report):
+def process_directory(
+    ctx: click.Context,
+    source_dir: str,
+    form_template: str,
+    output_dir: str,
+    pattern: str,
+    report: str | None,
+) -> None:
     """Process all documents in a directory using CrewAI.
 
     SOURCE_DIR: Directory containing Vietnamese documents
@@ -351,7 +369,7 @@ def process_directory(ctx, source_dir, form_template, output_dir, pattern, repor
         return
 
     # Progress tracking with rich display
-    def progress_callback(completed, total, job):
+    def progress_callback(completed: int, total: int, job: BatchJob) -> None:
         # This function is replaced by the rich progress bar, but we keep it
         # for backward compatibility with existing code
         pass
@@ -392,7 +410,7 @@ def process_directory(ctx, source_dir, form_template, output_dir, pattern, repor
 @click.argument("jobs_file", type=click.Path(exists=True))
 @click.option("--report", "-r", type=click.Path(), help="Save processing report")
 @click.pass_context
-def process_from_file(ctx, jobs_file, report):
+def process_from_file(ctx: click.Context, jobs_file: str, report: str | None) -> None:
     """Process jobs defined in a JSON file using CrewAI.
 
     JOBS_FILE: JSON file containing job definitions
@@ -407,7 +425,7 @@ def process_from_file(ctx, jobs_file, report):
 
     # Load jobs from file
     with Path(jobs_file).open() as f:
-        jobs_data = json.load(f)
+        jobs_data: dict[str, Any] = json.load(f)
 
     for job_data in jobs_data.get("jobs", []):
         processor.add_job(job_data["source"], job_data["form"], job_data["output"])
@@ -415,7 +433,7 @@ def process_from_file(ctx, jobs_file, report):
     click.echo(f"Loaded {len(processor.jobs)} jobs from {jobs_file}")
 
     # Progress tracking with rich display
-    def progress_callback(completed, total, job):
+    def progress_callback(completed: int, total: int, job: BatchJob) -> None:
         # This function is replaced by the rich progress bar, but we keep it
         # for backward compatibility with existing code
         pass
@@ -440,7 +458,9 @@ def process_from_file(ctx, jobs_file, report):
 @click.option("--form", required=True, help="Form template")
 @click.option("--output-dir", required=True, help="Output directory")
 @click.option("--pattern", default="**/*.pdf", help="File pattern")
-def generate_jobs_file(output_file, source_dir, form, output_dir, pattern):
+def generate_jobs_file(
+    output_file: str, source_dir: str, form: str, output_dir: str, pattern: str
+) -> None:
     """Generate a jobs file for CrewAI batch processing.
 
     OUTPUT_FILE: Path to save the jobs JSON file
@@ -475,13 +495,20 @@ def generate_jobs_file(output_file, source_dir, form, output_dir, pattern):
         json.dump(jobs_data, f, indent=2)
 
     click.echo(f"Generated CrewAI jobs file with {len(jobs)} jobs: {output_file}")
-    click.echo(
-        f"Recommended concurrent crews: {jobs_data['configuration']['recommended_concurrent']}",
-    )
+    # Check if the configuration contains the recommended_concurrent field
+    if (
+        isinstance(jobs_data, dict)
+        and "configuration" in jobs_data
+        and isinstance(jobs_data["configuration"], dict)
+    ):
+        recommended = jobs_data["configuration"].get("recommended_concurrent", 1)
+        click.echo(f"Recommended concurrent crews: {recommended}")
+    else:
+        click.echo("Recommended concurrent crews: 1")
 
 
 @batch_cli.command()
-def crew_status():
+def crew_status() -> None:
     """Check CrewAI and Ollama status for batch processing."""
     click.echo("🔍 Checking CrewAI Batch Processing Status...")
 
@@ -497,7 +524,7 @@ def crew_status():
     # Check Ollama connection
     import aiohttp
 
-    async def check_ollama():
+    async def check_ollama() -> bool:
         try:
             async with (
                 aiohttp.ClientSession() as session,
