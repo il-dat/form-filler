@@ -57,12 +57,18 @@ class DocumentExtractionTool(BaseTool):
     name: str = "document_extractor"
     description: str = "Extract text from PDF or image files using traditional or AI methods"
 
-    def __init__(self, extraction_method="traditional", vision_model="llava:7b", *args, **kwargs):
+    def __init__(
+        self,
+        extraction_method: str = "traditional",
+        vision_model: str = "llava:7b",
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """Initialize the object."""
         super().__init__()
         self.extraction_method = extraction_method
         self.vision_model = vision_model
-        self.ollama_llm = None
+        self.ollama_llm: OllamaLLM | None = None
         if extraction_method == "ai":
             self.ollama_llm = OllamaLLM(model=vision_model, base_url="http://localhost:11434")
 
@@ -136,11 +142,17 @@ class DocumentExtractionTool(BaseTool):
     def _extract_from_image_traditional(self, file_path: Path) -> str:
         """Extract text from image using Tesseract OCR."""
         image = Image.open(file_path)
-        return pytesseract.image_to_string(image, lang="vie")
+        result = pytesseract.image_to_string(image, lang="vie")
+        return str(result)
 
     def _extract_from_image_ai(self, file_path: Path) -> str:
         """Extract text from image using AI vision model."""
         try:
+            # Check if ollama_llm is initialized
+            if self.ollama_llm is None:
+                logger.warning("AI model not initialized, falling back to OCR")
+                return self._extract_from_image_traditional(file_path)
+
             # Convert image to base64 for AI processing
             import base64
 
@@ -158,15 +170,33 @@ class DocumentExtractionTool(BaseTool):
 
             Extracted text:"""
 
-            # For now, simulate AI extraction (in real implementation, use vision model)
-            # This is a placeholder - you would implement actual vision model here
-            extracted_text = self.ollama_llm.invoke(prompt)
+            # Get response from model
+            response: Any = self.ollama_llm.invoke(prompt)
 
-            if not extracted_text:
-                logger.warning("AI image extraction failed, falling back to OCR")
+            # Initialize extracted_text
+            extracted_text = ""
+
+            # Try to get the text content based on the response type
+            try:
+                if response is None:
+                    raise ValueError("AI response is None")
+                elif isinstance(response, str):
+                    extracted_text = response
+                elif isinstance(response, dict) and "content" in response:
+                    extracted_text = str(response["content"])
+                elif hasattr(response, "content"):
+                    extracted_text = str(response.content)
+                else:
+                    raise ValueError(f"Unexpected response format: {type(response)}")
+
+                if not extracted_text:
+                    raise ValueError("AI response returned empty text")
+
+                return extracted_text
+
+            except (ValueError, AttributeError, KeyError, TypeError) as e:
+                logger.warning(f"AI extraction error: {e}, falling back to OCR")
                 return self._extract_from_image_traditional(file_path)
-
-            return extracted_text
 
         except Exception as e:
             logger.warning(f"AI image extraction failed, falling back to OCR: {e}")

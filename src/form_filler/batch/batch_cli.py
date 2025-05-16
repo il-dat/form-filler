@@ -32,7 +32,9 @@ logger = logging.getLogger(__name__)
     help="Text extraction method",
 )
 @click.pass_context
-def batch_cli(ctx, verbose, model, crews, extraction_method):
+def batch_cli(
+    ctx: click.Context, verbose: bool, model: str, crews: int, extraction_method: str
+) -> None:
     """Batch Processing for Vietnamese Document Form Filler (CrewAI Edition).
 
     Process multiple Vietnamese documents in parallel using CrewAI crews
@@ -52,7 +54,9 @@ def batch_cli(ctx, verbose, model, crews, extraction_method):
 @click.argument("form_template", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument("output_dir", type=click.Path(file_okay=False, dir_okay=True))
 @click.pass_context
-def process_directory(ctx, input_dir, form_template, output_dir):
+def process_directory(
+    ctx: click.Context, input_dir: str, form_template: str, output_dir: str
+) -> None:
     """Process all documents in a directory.
 
     Example:
@@ -85,7 +89,7 @@ def process_directory(ctx, input_dir, form_template, output_dir):
 
 @batch_cli.command()
 @click.pass_context
-def crew_status(ctx):
+def crew_status(ctx: click.Context) -> None:
     """Show status of processing crews."""
     # Placeholder for showing status of current processing crews
     click.echo("Crew Status")
@@ -94,6 +98,6 @@ def crew_status(ctx):
     click.echo("This would show active crews, documents being processed, and completion status")
 
 
-def main():
+def main() -> None:
     """Main entry point for the batch CLI."""
     batch_cli()

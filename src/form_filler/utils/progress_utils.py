@@ -8,7 +8,7 @@ during long-running operations in the form-filler tool.
 
 import time
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, TypeAlias, TypeVar
 
 from rich.console import Console
 from rich.progress import (
@@ -21,7 +21,7 @@ from rich.progress import (
 )
 from tqdm import tqdm
 
-ProgressType = Progress | tqdm
+ProgressType: TypeAlias = Progress | tqdm
 
 
 def create_progress_bar(

@@ -5,6 +5,7 @@ import base64
 import logging
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import fitz  # PyMuPDF for PDF
 import pytesseract
@@ -12,7 +13,7 @@ import requests
 from crewai.tools import BaseTool
 from langchain_ollama import OllamaLLM
 from PIL import Image
-from pydantic import Field, PrivateAttr, SkipValidation
+from pydantic import Field, PrivateAttr
 
 # Setup logging
 logging.basicConfig(
@@ -33,17 +34,17 @@ class DocumentExtractionTool(BaseTool):
     openai_model: str = Field(default="gpt-4-vision-preview")
 
     # Private attribute for ollama_llm
-    _ollama_llm: SkipValidation[object] | None = PrivateAttr(default=None)
+    _ollama_llm = PrivateAttr(default=None)  # type: Optional[OllamaLLM]
 
     def __init__(
         self,
-        extraction_method="traditional",
-        vision_model="llava:7b",
-        openai_api_key=None,
-        openai_model="gpt-4-vision-preview",
-        *args,
-        **kwargs,
-    ):
+        extraction_method: str = "traditional",
+        vision_model: str = "llava:7b",
+        openai_api_key: str | None = None,
+        openai_model: str = "gpt-4-vision-preview",
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """Initialize the document extraction tool."""
         kwargs["extraction_method"] = extraction_method
         kwargs["vision_model"] = vision_model
@@ -132,11 +133,17 @@ class DocumentExtractionTool(BaseTool):
     def _extract_from_image_traditional(self, file_path: Path) -> str:
         """Extract text from image using Tesseract OCR."""
         image = Image.open(file_path)
-        return pytesseract.image_to_string(image, lang="vie")
+        result = pytesseract.image_to_string(image, lang="vie")
+        return str(result)
 
     def _extract_from_image_ai(self, file_path: Path) -> str:
         """Extract text from image using AI vision model."""
         try:
+            # First check if ollama_llm is initialized
+            if self._ollama_llm is None:
+                logger.warning("AI model not initialized, falling back to OCR")
+                return self._extract_from_image_traditional(file_path)
+
             # Convert image to base64 for AI processing
             with Path(file_path).open("rb") as img_file:
                 base64_image = base64.b64encode(img_file.read()).decode("utf-8")
@@ -152,34 +159,33 @@ class DocumentExtractionTool(BaseTool):
 
             Extracted text:"""
 
-            # Use the vision model to extract text
-            response = self._ollama_llm.invoke(prompt)
+            # Get response from model
+            response: Any = self._ollama_llm.invoke(prompt)
 
-            # Handle different response formats
-            if response is None:
-                logger.warning("AI image extraction returned None, falling back to OCR")
+            # Initialize extracted_text
+            extracted_text = ""
+
+            # Try to get the text content based on the response type
+            try:
+                if response is None:
+                    raise ValueError("AI response is None")
+                elif isinstance(response, str):
+                    extracted_text = response
+                elif isinstance(response, dict) and "content" in response:
+                    extracted_text = str(response["content"])
+                elif hasattr(response, "content"):
+                    extracted_text = str(response.content)
+                else:
+                    raise ValueError(f"Unexpected response format: {type(response)}")
+
+                if not extracted_text:
+                    raise ValueError("AI response returned empty text")
+
+                return extracted_text
+
+            except (ValueError, AttributeError, KeyError, TypeError) as e:
+                logger.warning(f"AI extraction error: {e}, falling back to OCR")
                 return self._extract_from_image_traditional(file_path)
-
-            # Case 1: String response
-            if isinstance(response, str):
-                extracted_text = response
-            # Case 2: Dict response with 'content' key
-            elif isinstance(response, dict) and "content" in response:
-                extracted_text = response["content"]
-            # Case 3: Object with content attribute
-            elif hasattr(response, "content"):
-                extracted_text = response.content
-            else:
-                logger.warning(
-                    f"Unexpected response format: {type(response)}, falling back to OCR",
-                )
-                return self._extract_from_image_traditional(file_path)
-
-            if not extracted_text:
-                logger.warning("AI image extraction returned empty text, falling back to OCR")
-                return self._extract_from_image_traditional(file_path)
-
-            return extracted_text
 
         except Exception as e:
             logger.warning(f"AI image extraction failed, falling back to OCR: {e}")
@@ -233,7 +239,7 @@ class DocumentExtractionTool(BaseTool):
 
             result = response.json()
             extracted_text = result["choices"][0]["message"]["content"]
-            return extracted_text
+            return str(extracted_text)
 
         except Exception as e:
             logger.warning(f"OpenAI image extraction failed, falling back to OCR: {e}")

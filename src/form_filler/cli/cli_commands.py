@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 
-def show_version(ctx, param, value):
+def show_version(ctx: click.Context, param: click.Parameter, value: bool) -> None:
     """Show current version of the package."""
     if not value or ctx.resilient_parsing:
         return
@@ -80,7 +80,15 @@ def show_version(ctx, param, value):
     help="Show the version and exit.",
 )
 @click.pass_context
-def cli(ctx, verbose, model, extraction_method, vision_model, openai_api_key, openai_model):
+def cli(
+    ctx: click.Context,
+    verbose: bool,
+    model: str,
+    extraction_method: str,
+    vision_model: str,
+    openai_api_key: str | None,
+    openai_model: str,
+) -> None:
     """Vietnamese to English Document Form Filler (CrewAI Edition).
 
     A CrewAI-based multi-agent system for processing Vietnamese documents (PDF/images)
@@ -122,16 +130,16 @@ def cli(ctx, verbose, model, extraction_method, vision_model, openai_api_key, op
 @click.option("--openai-model", help="OpenAI model for OpenAI extraction method")
 @click.pass_context
 def process(
-    ctx,
-    source,
-    form,
-    output,
-    model,
-    extraction_method,
-    vision_model,
-    openai_api_key,
-    openai_model,
-):
+    ctx: click.Context,
+    source: str | Path,
+    form: str | Path,
+    output: str | Path,
+    model: str | None,
+    extraction_method: str | None,
+    vision_model: str | None,
+    openai_api_key: str | None,
+    openai_model: str | None,
+) -> None:
     """Process a Vietnamese document and fill an English DOCX form using CrewAI.
 
     SOURCE: Path to Vietnamese document (PDF or image)
@@ -218,7 +226,14 @@ def process(
 @click.option("--openai-api-key", help="OpenAI API key for OpenAI extraction method")
 @click.option("--openai-model", help="OpenAI model for OpenAI extraction method")
 @click.pass_context
-def extract(ctx, file_path, extraction_method, vision_model, openai_api_key, openai_model):
+def extract(
+    ctx: click.Context,
+    file_path: str | Path,
+    extraction_method: str | None,
+    vision_model: str | None,
+    openai_api_key: str | None,
+    openai_model: str | None,
+) -> None:
     """Extract text from a Vietnamese document (for testing).
 
     Examples:
@@ -276,7 +291,7 @@ def extract(ctx, file_path, extraction_method, vision_model, openai_api_key, ope
 @click.argument("vietnamese_text")
 @click.option("--model", "-m", help="Override default model")
 @click.pass_context
-def translate(ctx, vietnamese_text, model):
+def translate(ctx: click.Context, vietnamese_text: str, model: str | None) -> None:
     """Translate Vietnamese text to English (for testing)."""
     model = model or ctx.obj["model"]
 
@@ -373,7 +388,17 @@ async def check_ollama(host: str, port: int, check_vision: bool) -> None:
 
 
 @cli.command()
-def version():
+def version() -> None:
     """Display the current version of the form-filler package."""
+
+    # Create a dummy parameter for the show_version function
+    class DummyParameter(click.Parameter):
+        """Dummy parameter class for type compatibility."""
+
+        def __init__(self) -> None:
+            """Initialize with minimal required attributes."""
+            self.name = "version"
+            self.opts = ["--version"]
+
     # Use the same function that handles the --version flag
-    show_version(click.get_current_context(), None, True)
+    show_version(click.get_current_context(), DummyParameter(), True)
