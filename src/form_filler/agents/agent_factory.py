@@ -21,7 +21,17 @@ def create_document_collector_agent(
     openai_api_key: str = None,
     openai_model: str = "gpt-4-vision-preview",
 ) -> Agent:
-    """Create the document collection agent."""
+    """Create the document collection agent.
+
+    Args:
+        extraction_method: Method to use for text extraction (traditional, ai, openai)
+        vision_model: Vision model to use for AI text extraction
+        openai_api_key: OpenAI API key for OpenAI extraction method
+        openai_model: OpenAI model for OpenAI extraction method
+
+    Returns:
+        A CrewAI Agent configured for document collection
+    """
     return Agent(
         role="Document Text Extractor",
         goal="Extract text content from Vietnamese documents (PDFs and images) with high accuracy",
@@ -43,7 +53,14 @@ def create_document_collector_agent(
 
 
 def create_translator_agent(model: str = "llama3.2:3b") -> Agent:
-    """Create the translation agent."""
+    """Create the translation agent.
+
+    Args:
+        model: Ollama model to use for translation
+
+    Returns:
+        A CrewAI Agent configured for text translation
+    """
     return Agent(
         role="Vietnamese to English Translator",
         goal="Provide accurate and contextually appropriate translations from Vietnamese to English",
@@ -57,7 +74,11 @@ def create_translator_agent(model: str = "llama3.2:3b") -> Agent:
 
 
 def create_form_analyst_agent() -> Agent:
-    """Create the form analysis agent."""
+    """Create the form analysis agent.
+
+    Returns:
+        A CrewAI Agent configured for form analysis
+    """
     return Agent(
         role="Document Form Analyst",
         goal="Analyze DOCX forms and identify all fillable fields and their purposes",
@@ -71,7 +92,14 @@ def create_form_analyst_agent() -> Agent:
 
 
 def create_form_filler_agent(model: str = "llama3.2:3b") -> Agent:
-    """Create the form filling agent."""
+    """Create the form filling agent.
+
+    Args:
+        model: Ollama model to use for form filling
+
+    Returns:
+        A CrewAI Agent configured for form filling
+    """
     return Agent(
         role="Form Completion Specialist",
         goal="Fill DOCX forms with translated content using intelligent field mapping",

@@ -19,7 +19,13 @@ from form_filler.cli.cli_commands import cli
 @click.option("--port", default=11434, help="Ollama port")
 @click.option("--check-vision", is_flag=True, help="Also check for vision models")
 def check_ollama(host: str, port: int, check_vision: bool) -> None:
-    """Check if Ollama is running and list available models."""
+    """Check if Ollama is running and list available models.
+
+    Args:
+        host: Hostname of the Ollama server
+        port: Port number of the Ollama server
+        check_vision: Whether to also check for vision models
+    """
     from form_filler.cli.cli_commands import check_ollama as async_check_ollama
 
     asyncio.run(async_check_ollama(host, port, check_vision))

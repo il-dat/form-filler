@@ -10,9 +10,7 @@ import sys
 
 
 def setup_logging(log_level: str = "INFO", log_file: str | None = None) -> logging.Logger:
-    """
-
-    Set up logging configuration.
+    """Set up logging configuration.
 
     Args:
         log_level: The logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -46,9 +44,7 @@ def setup_logging(log_level: str = "INFO", log_file: str | None = None) -> loggi
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-
-    Get a logger for a specific module/component.
+    """Get a logger for a specific module/component.
 
     Args:
         name: The name of the module/component

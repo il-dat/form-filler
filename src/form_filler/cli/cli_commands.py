@@ -287,7 +287,13 @@ def translate(ctx, vietnamese_text, model):
 
 
 async def check_ollama(host: str, port: int, check_vision: bool) -> None:
-    """Check if Ollama is running and list available models."""
+    """Check if Ollama is running and list available models.
+
+    Args:
+        host: Hostname of the Ollama server
+        port: Port number of the Ollama server
+        check_vision: Whether to also check for vision models
+    """
     url = f"http://{host}:{port}/api/tags"
 
     try:
