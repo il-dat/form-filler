@@ -72,8 +72,6 @@ dev = [
     "pytest-asyncio<1.0.0,>=0.21.0",
     "pytest-cov<5.0.0,>=4.0.0",
     "pytest-beartype<1.0.0,>=0.0.2",
-    "black<24.0.0,>=23.0.0",
-    "isort<6.0.0,>=5.12.0",
     "mypy<2.0.0,>=1.5.0",
     "pre-commit<5.0.0,>=4.2.0",
     "beartype<1.0.0,>=0.18.5",
@@ -203,6 +201,19 @@ ignore_missing_imports = true
 [tool.ruff]
 line-length = 99
 target-version = "py310"
+# Enable the formatter
+include = ["*.py", "*.pyi"]
+extend-exclude = ["__pycache__", "*.pyc", ".git"]
+
+[tool.ruff.format]
+# Use single quotes for strings
+quote-style = "double"
+# Indent with 4 spaces
+indent-style = "space"
+# Keep line endings consistent
+line-ending = "auto"
+# Skip lines that are too long
+skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 # E: pycodestyle errors
@@ -216,9 +227,13 @@ target-version = "py310"
 # C4: flake8-comprehensions
 # SIM: flake8-simplify
 # TCH: flake8-type-checking
-select = ["E", "F", "I", "N", "D", "UP", "B", "S", "C4", "SIM", "TCH"]
+# Q: flake8-quotes
+# COM: flake8-commas
+# PTH: flake8-use-pathlib
+# RUF: Ruff-specific rules
+select = ["E", "F", "I", "N", "D", "UP", "B", "S", "C4", "SIM", "TCH", "Q", "COM", "PTH", "RUF"]
 ignore = [
-    "E501",  # Line too long (handled by black)
+    "E501",  # Line too long (handled by ruff formatter)
     "D100",  # Missing docstring in public module
     "D104",  # Missing docstring in public package
     "D203",  # One blank line required before class docstring
@@ -248,23 +263,22 @@ test-cov = "pytest --cov=src tests/"
 run-demo = "python src/demo.py"
 ruff-check = "ruff check src tests"
 ruff-fix = "ruff check --fix src tests"
+ruff-format = "ruff format ."
 
 [tool.poe.tasks.full-lint]
 sequence = [
-    { cmd = "black --check ." },
-    { cmd = "isort --check ." },
     { cmd = "ruff check src tests" },
+    { cmd = "ruff format --check ." },
     { cmd = "mypy src/form_filler" }
 ]
 help = "Run full linting suite without modifying files"
 
 [tool.poe.tasks.fix-all]
 sequence = [
-    { cmd = "black ." },
-    { cmd = "isort ." },
-    { cmd = "ruff check --fix src tests" }
+    { cmd = "ruff check --fix src tests" },
+    { cmd = "ruff format ." }
 ]
-help = "Apply all automatic fixes (black, isort, ruff)"
+help = "Apply all automatic fixes with ruff"
 
 [tool.poe.tasks.install]
 sequence = [

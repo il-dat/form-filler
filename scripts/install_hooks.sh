@@ -1,22 +1,11 @@
 #!/bin/bash
 # Script to install pre-commit hooks in the current uv virtualenv
 
-# Get the current Python executable path
-PYTHON_EXEC=$(which python)
+echo "Installing dev dependencies with uv..."
+uv pip install -e ".[dev]"
 
-echo "Using Python at: $PYTHON_EXEC"
-
-# Install pre-commit if not already installed
-if ! $PYTHON_EXEC -m pip list | grep pre-commit >/dev/null; then
-    echo "Installing pre-commit..."
-    $PYTHON_EXEC -m pip install pre-commit
-else
-    echo "pre-commit already installed"
-fi
-
-# Install the hooks
 echo "Installing pre-commit hooks..."
-$PYTHON_EXEC -m pre_commit install
+uv run pre-commit install --install-hooks
 
 # Ensure gitleaks config exists (required for pre-commit hook)
 if [ ! -f ".gitleaks.toml" ]; then
@@ -25,6 +14,6 @@ if [ ! -f ".gitleaks.toml" ]; then
 fi
 
 echo "Running pre-commit hooks on all files..."
-$PYTHON_EXEC -m pre_commit run --all-files
+uv run pre-commit run --all-files
 
 echo "Done!"
