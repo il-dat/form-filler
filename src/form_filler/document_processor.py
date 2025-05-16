@@ -11,9 +11,10 @@ import logging
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 import click
@@ -209,7 +210,7 @@ class TranslationTool(BaseTool):
     name: str = "vietnamese_translator"
     description: str = "Translate Vietnamese text to English using Ollama LLM"
 
-    def __init__(self, model="llama3.2:3b", *args, **kwargs):
+    def __init__(self, model: str = "llama3.2:3b", *args: Any, **kwargs: Any) -> None:
         """Initialize the object."""
         super().__init__()
         self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
@@ -235,7 +236,8 @@ class TranslationTool(BaseTool):
 
         try:
             response = self.llm.invoke(messages)
-            return response.content if hasattr(response, "content") else str(response)
+            result = response.content if hasattr(response, "content") else str(response)
+            return str(result)
         except Exception as e:
             logger.error(f"Translation failed: {e}")
             raise
@@ -282,7 +284,7 @@ class FormFillingTool(BaseTool):
     name: str = "form_filler"
     description: str = "Fill DOCX form fields with provided content"
 
-    def __init__(self, model="llama3.2:3b", *args, **kwargs):
+    def __init__(self, model: str = "llama3.2:3b", *args: Any, **kwargs: Any) -> None:
         """Initialize the object."""
         super().__init__()
         self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
@@ -389,12 +391,13 @@ Consider the context and purpose of each field. Return only valid JSON in this f
 
         try:
             response = self.llm.invoke(messages)
-            return response.content if hasattr(response, "content") else str(response)
+            result = response.content if hasattr(response, "content") else str(response)
+            return str(result)
         except Exception as e:
             logger.error(f"AI field mapping failed: {e}")
             return self._create_fallback_json(form_fields, content)
 
-    def _create_fallback_mappings(self, doc: Document, content: str) -> list[dict]:
+    def _create_fallback_mappings(self, doc: Document, content: str) -> list[dict[str, Any]]:
         """Create simple fallback mappings when AI fails."""
         paragraphs_with_placeholders = []
         for paragraph in doc.paragraphs:
@@ -510,7 +513,7 @@ class DocumentProcessingCrew:
         text_model: str = "llama3.2:3b",
         extraction_method: str = "traditional",
         vision_model: str = "llava:7b",
-    ):
+    ) -> None:
         # Create agents
         self.document_collector = create_document_collector_agent(extraction_method, vision_model)
         self.translator = create_translator_agent(text_model)
@@ -663,7 +666,9 @@ class DocumentProcessingCrew:
 )
 @click.option("--vision-model", "-vm", default="llava:7b", help="Vision model for AI extraction")
 @click.pass_context
-def cli(ctx, verbose, model, extraction_method, vision_model):
+def cli(
+    ctx: click.Context, verbose: bool, model: str, extraction_method: str, vision_model: str
+) -> None:
     """Vietnamese to English Document Form Filler (CrewAI Edition).
 
     A CrewAI-based multi-agent system for processing Vietnamese documents (PDF/images)
@@ -696,7 +701,15 @@ def cli(ctx, verbose, model, extraction_method, vision_model):
 )
 @click.option("--vision-model", "-vm", help="Override default vision model")
 @click.pass_context
-def process(ctx, source, form, output, model, extraction_method, vision_model):
+def process(
+    ctx: click.Context,
+    source: str,
+    form: str,
+    output: str,
+    model: str | None,
+    extraction_method: str | None,
+    vision_model: str | None,
+) -> None:
     """Process a Vietnamese document and fill an English DOCX form using CrewAI.
 
     SOURCE: Path to Vietnamese document (PDF or image)
@@ -752,7 +765,9 @@ def process(ctx, source, form, output, model, extraction_method, vision_model):
 )
 @click.option("--vision-model", "-vm", help="Vision model for AI extraction")
 @click.pass_context
-def extract(ctx, file_path, extraction_method, vision_model):
+def extract(
+    ctx: click.Context, file_path: str, extraction_method: str | None, vision_model: str | None
+) -> None:
     """Extract text from a Vietnamese document (for testing).
 
     Example with AI extraction:
@@ -788,7 +803,7 @@ def extract(ctx, file_path, extraction_method, vision_model):
 @click.argument("vietnamese_text")
 @click.option("--model", "-m", help="Override default model")
 @click.pass_context
-def translate(ctx, vietnamese_text, model):
+def translate(ctx: click.Context, vietnamese_text: str, model: str | None) -> None:
     """Translate Vietnamese text to English (for testing)."""
     model = model or ctx.obj["model"]
 
@@ -811,7 +826,7 @@ def translate(ctx, vietnamese_text, model):
 @click.option("--host", default="localhost", help="Ollama host")
 @click.option("--port", default=11434, help="Ollama port")
 @click.option("--check-vision", is_flag=True, help="Also check for vision models")
-async def check_ollama(host, port, check_vision):
+async def check_ollama(host: str, port: int, check_vision: bool) -> None:
     """Check if Ollama is running and list available models."""
     url = f"http://{host}:{port}/api/tags"
 
@@ -871,17 +886,17 @@ async def check_ollama(host, port, check_vision):
 
 
 # Async wrapper for Click commands
-def async_command(f):
+def async_command(f: Callable) -> Callable:
     """Decorator to run async click commands."""
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper
 
 
 # Apply async wrapper to commands
-check_ollama = async_command(check_ollama)
+check_ollama = cast(click.Command, async_command(check_ollama))
 
 
 if __name__ == "__main__":
