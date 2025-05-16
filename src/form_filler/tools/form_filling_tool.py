@@ -7,11 +7,11 @@ Handles filling DOCX forms with translated content.
 
 import json
 import logging
+from typing import Any
 
 from crewai.tools import BaseTool
 from docx import Document
 from langchain_community.chat_models import ChatOllama
-from pydantic import SkipValidation
 
 from form_filler.tools.form_analysis_tool import FormAnalysisTool
 
@@ -24,9 +24,9 @@ class FormFillingTool(BaseTool):
 
     name: str = "form_filler"
     description: str = "Fill DOCX form fields with provided content"
-    llm: SkipValidation[object] = None
+    llm: ChatOllama | None = None
 
-    def __init__(self, model="llama3.2:3b", *args, **kwargs):
+    def __init__(self, model: str = "llama3.2:3b", *args: Any, **kwargs: Any) -> None:
         """Initialize the object."""
         super().__init__(*args, **kwargs)
         self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
@@ -132,13 +132,17 @@ Consider the context and purpose of each field. Return only valid JSON in this f
         ]
 
         try:
+            if not self.llm:
+                raise ValueError("LLM model not initialized")
+
             response = self.llm.invoke(messages)
-            return response.content if hasattr(response, "content") else str(response)
+            result = response.content if hasattr(response, "content") else str(response)
+            return str(result)
         except Exception as e:
             logger.error(f"AI field mapping failed: {e}")
             return self._create_fallback_json(form_fields, content)
 
-    def _create_fallback_mappings(self, doc: Document, content: str) -> list[dict]:
+    def _create_fallback_mappings(self, doc: Document, content: str) -> list[dict[str, Any]]:
         """Create simple fallback mappings when AI fails."""
         paragraphs_with_placeholders = []
         for paragraph in doc.paragraphs:

@@ -6,10 +6,10 @@ Handles translating Vietnamese to English using Ollama models.
 """
 
 import logging
+from typing import Any
 
 from crewai.tools import BaseTool
 from langchain_community.chat_models import ChatOllama
-from pydantic import SkipValidation
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -20,9 +20,9 @@ class TranslationTool(BaseTool):
 
     name: str = "vietnamese_translator"
     description: str = "Translate Vietnamese text to English using Ollama LLM"
-    llm: SkipValidation[object] = None
+    llm: ChatOllama | None = None
 
-    def __init__(self, model="llama3.2:3b", *args, **kwargs):
+    def __init__(self, model: str = "llama3.2:3b", *args: Any, **kwargs: Any) -> None:
         """Initialize the object."""
         super().__init__(*args, **kwargs)
         self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
@@ -47,8 +47,12 @@ class TranslationTool(BaseTool):
         ]
 
         try:
+            if not self.llm:
+                raise ValueError("LLM model not initialized")
+
             response = self.llm.invoke(messages)
-            return response.content if hasattr(response, "content") else str(response)
+            result = response.content if hasattr(response, "content") else str(response)
+            return str(result)
         except Exception as e:
             logger.error(f"Translation failed: {e}")
             raise
