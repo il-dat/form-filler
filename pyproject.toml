@@ -197,6 +197,10 @@ module = [
     "mammoth",
     "docx",
     "docx.*",
+    "PIL",
+    "PIL.*",
+    "tqdm",
+    "tqdm.*"
 ]
 ignore_missing_imports = true
 
