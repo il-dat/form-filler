@@ -90,7 +90,9 @@ def demo_crewai_single_document():
     # Initialize CrewAI processor
     print("🤖 Initializing CrewAI crew...")
     crew_processor = DocumentProcessingCrew(
-        text_model="llama3.2:3b", extraction_method="traditional", vision_model="llava:7b"
+        text_model="llama3.2:3b",
+        extraction_method="traditional",
+        vision_model="llava:7b",
     )
 
     print("📄 Processing Vietnamese CV with CrewAI agents...")
@@ -111,7 +113,7 @@ def demo_crewai_single_document():
 
         # Show agent collaboration results
         if Path(output_path).exists():
-            with open(output_path) as f:
+            with Path(output_path).open() as f:
                 content = f.read()
                 print("\n📋 CrewAI Filled Form Preview:")
                 print(content[:300] + "..." if len(content) > 300 else content)
@@ -195,7 +197,7 @@ def demo_crewai_batch_processing():
 
     # Create sample documents
     sample_documents = [
-        f"Tài liệu {i}: Tên: Người {i}, Tuổi: {20+i}, Địa chỉ: Hà Nội, Việt Nam"
+        f"Tài liệu {i}: Tên: Người {i}, Tuổi: {20 + i}, Địa chỉ: Hà Nội, Việt Nam"
         for i in range(1, 4)
     ]
 
@@ -208,13 +210,13 @@ def demo_crewai_batch_processing():
 
     # Create sample files
     form_path = temp_dir / "form.txt"
-    with open(form_path, "w") as f:
+    with Path(form_path).open("w") as f:
         f.write(SAMPLE_FORM_CONTENT)
 
     # Create input documents
     for i, content in enumerate(sample_documents, 1):
         doc_path = input_dir / f"document_{i}.txt"
-        with open(doc_path, "w") as f:
+        with Path(doc_path).open("w") as f:
             f.write(content)
 
     print(f"📁 Created {len(sample_documents)} sample documents")
@@ -233,7 +235,10 @@ def demo_crewai_batch_processing():
 
     # Discover jobs
     job_count = batch_processor.discover_jobs(
-        str(input_dir), str(form_path), str(output_dir), "*.txt"
+        str(input_dir),
+        str(form_path),
+        str(output_dir),
+        "*.txt",
     )
 
     print(f"🔍 Discovered {job_count} processing jobs")
@@ -247,7 +252,7 @@ def demo_crewai_batch_processing():
         progress = (completed / total) * 100
         status = "✅" if job.status == "completed" else "❌"
         print(
-            f"Progress: {completed}/{total} ({progress:.1f}%) - {status} {job.source_path.name} (Crew: {job.crew_id})"
+            f"Progress: {completed}/{total} ({progress:.1f}%) - {status} {job.source_path.name} (Crew: {job.crew_id})",
         )
 
     # Process batch
@@ -290,7 +295,9 @@ def demo_crewai_extraction_methods():
     # Test Traditional Method
     print("🔧 Testing Traditional Extraction with CrewAI...")
     traditional_crew = DocumentProcessingCrew(
-        text_model="llama3.2:3b", extraction_method="traditional", vision_model="llava:7b"
+        text_model="llama3.2:3b",
+        extraction_method="traditional",
+        vision_model="llava:7b",
     )
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as output_file:
@@ -298,7 +305,9 @@ def demo_crewai_extraction_methods():
 
     start_time = time.time()
     result_traditional = traditional_crew.process_document(
-        temp_path, form_path, output_traditional
+        temp_path,
+        form_path,
+        output_traditional,
     )
     traditional_time = time.time() - start_time
 
@@ -309,7 +318,9 @@ def demo_crewai_extraction_methods():
     print("\n🧠 Testing AI Extraction with CrewAI...")
     # Simulate AI configuration without actually running it since it requires vision model
     DocumentProcessingCrew(
-        text_model="llama3.2:3b", extraction_method="ai", vision_model="llava:7b"
+        text_model="llama3.2:3b",
+        extraction_method="ai",
+        vision_model="llava:7b",
     )
 
     # Note: This would require actual vision model installation
@@ -334,7 +345,7 @@ def demo_crewai_extraction_methods():
             openai_model="gpt-4-vision-preview",
         )
 
-        print("   ℹ️ Using OpenAI API for extraction")
+        print("   i️ Using OpenAI API for extraction")
         print("   Demo shows configuration and workflow")
         print("⚙️ OpenAI method configuration ready")
         print("   Agents: DocumentCollector (OpenAI) → Translator → FormAnalyst → FormFiller")
@@ -481,9 +492,12 @@ def main():
 
         async def check_ollama():
             try:
-                async with aiohttp.ClientSession() as session, session.get(
-                    "http://localhost:11434/api/tags"
-                ) as response:
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(
+                        "http://localhost:11434/api/tags",
+                    ) as response,
+                ):
                     if response.status == 200:
                         print("✅ Ollama is running")
                         data = await response.json()
@@ -623,7 +637,7 @@ async def demo_single_document():
 
         # Show a preview of the result
         if Path(output_path).exists():
-            with open(output_path) as f:
+            with Path(output_path).open() as f:
                 content = f.read()
                 print("\n📋 Preview of filled form:")
                 print(content[:300] + "..." if len(content) > 300 else content)
@@ -689,7 +703,7 @@ async def demo_agent_pipeline():
             "form_path": form_path,
             "translated_text": translation_result.data,
             "output_path": output_path,
-        }
+        },
     )
 
     if filling_result.success:
@@ -714,7 +728,7 @@ async def demo_batch_processing():
 
     # Create sample documents
     sample_documents = [
-        f"Document {i}: Tên: Người {i}, Tuổi: {20+i}, Địa chỉ: Hà Nội" for i in range(1, 4)
+        f"Document {i}: Tên: Người {i}, Tuổi: {20 + i}, Địa chỉ: Hà Nội" for i in range(1, 4)
     ]
 
     # Create temporary directory structure
@@ -726,13 +740,13 @@ async def demo_batch_processing():
 
     # Create sample files
     form_path = temp_dir / "form.txt"
-    with open(form_path, "w") as f:
+    with Path(form_path).open("w") as f:
         f.write(SAMPLE_FORM_CONTENT)
 
     # Create input documents
     for i, content in enumerate(sample_documents, 1):
         doc_path = input_dir / f"document_{i}.txt"
-        with open(doc_path, "w") as f:
+        with Path(doc_path).open("w") as f:
             f.write(content)
 
     print(f"📁 Created {len(sample_documents)} sample documents")
@@ -744,7 +758,10 @@ async def demo_batch_processing():
 
     # Discover jobs
     job_count = batch_processor.discover_jobs(
-        str(input_dir), str(form_path), str(output_dir), "*.txt"
+        str(input_dir),
+        str(form_path),
+        str(output_dir),
+        "*.txt",
     )
 
     print(f"🔍 Discovered {job_count} processing jobs")
@@ -859,9 +876,12 @@ async def main():
     try:
         import aiohttp
 
-        async with aiohttp.ClientSession() as session, session.get(
-            "http://localhost:11434/api/tags"
-        ) as response:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                "http://localhost:11434/api/tags",
+            ) as response,
+        ):
             if response.status == 200:
                 print("✅ Ollama is running")
                 data = await response.json()

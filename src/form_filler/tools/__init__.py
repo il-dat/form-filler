@@ -10,4 +10,4 @@ from form_filler.tools.form_analysis_tool import FormAnalysisTool
 from form_filler.tools.form_filling_tool import FormFillingTool
 from form_filler.tools.translation_tool import TranslationTool
 
-__all__ = ["DocumentExtractionTool", "TranslationTool", "FormAnalysisTool", "FormFillingTool"]
+__all__ = ["DocumentExtractionTool", "FormAnalysisTool", "FormFillingTool", "TranslationTool"]

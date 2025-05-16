@@ -16,7 +16,8 @@ from pydantic import Field, PrivateAttr, SkipValidation
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,8 @@ class DocumentExtractionTool(BaseTool):
         # Initialize Ollama LLM if using AI extraction method
         if self.extraction_method == "ai":
             self._ollama_llm = OllamaLLM(
-                model=self.vision_model, base_url="http://localhost:11434"
+                model=self.vision_model,
+                base_url="http://localhost:11434",
             )
 
     def _run(self, file_path: str) -> str:
@@ -114,7 +116,7 @@ class DocumentExtractionTool(BaseTool):
                 try:
                     # Use AI to extract text from image
                     page_text = self._extract_from_image_ai(Path(tmp_img_path))
-                    images_text.append(f"\n--- Page {page_num+1} ---\n{page_text}")
+                    images_text.append(f"\n--- Page {page_num + 1} ---\n{page_text}")
                 finally:
                     # Clean up temporary image
                     Path(tmp_img_path).unlink()
@@ -135,7 +137,7 @@ class DocumentExtractionTool(BaseTool):
         """Extract text from image using AI vision model."""
         try:
             # Convert image to base64 for AI processing
-            with open(file_path, "rb") as img_file:
+            with Path(file_path).open("rb") as img_file:
                 base64_image = base64.b64encode(img_file.read()).decode("utf-8")
 
             # Create prompt for text extraction
@@ -168,7 +170,7 @@ class DocumentExtractionTool(BaseTool):
                 extracted_text = response.content
             else:
                 logger.warning(
-                    f"Unexpected response format: {type(response)}, falling back to OCR"
+                    f"Unexpected response format: {type(response)}, falling back to OCR",
                 )
                 return self._extract_from_image_traditional(file_path)
 
@@ -189,7 +191,7 @@ class DocumentExtractionTool(BaseTool):
 
         try:
             # Read image file and encode it
-            with open(file_path, "rb") as img_file:
+            with Path(file_path).open("rb") as img_file:
                 base64_image = base64.b64encode(img_file.read()).decode("utf-8")
 
             headers = {
@@ -212,7 +214,7 @@ class DocumentExtractionTool(BaseTool):
                                 "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
                             },
                         ],
-                    }
+                    },
                 ],
                 "max_tokens": 1000,
             }
@@ -256,7 +258,7 @@ class DocumentExtractionTool(BaseTool):
                 try:
                     # Use OpenAI to extract text from image
                     page_text = self._extract_from_image_openai(Path(tmp_img_path))
-                    images_text.append(f"\n--- Page {page_num+1} ---\n{page_text}")
+                    images_text.append(f"\n--- Page {page_num + 1} ---\n{page_text}")
                 finally:
                     # Clean up temporary image
                     Path(tmp_img_path).unlink()

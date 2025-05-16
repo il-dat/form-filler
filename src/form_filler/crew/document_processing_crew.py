@@ -30,7 +30,7 @@ class DocumentProcessingCrew:
         text_model: str = "llama3.2:3b",
         extraction_method: str = "traditional",
         vision_model: str = "llava:7b",
-        openai_api_key: str = None,
+        openai_api_key: str | None = None,
         openai_model: str = "gpt-4-vision-preview",
     ):
         # Create agents
@@ -52,7 +52,10 @@ class DocumentProcessingCrew:
         self.openai_model = openai_model
 
     def process_document(
-        self, source_path: str, form_path: str, output_path: str
+        self,
+        source_path: str,
+        form_path: str,
+        output_path: str,
     ) -> ProcessingResult:
         """Process a document through the CrewAI pipeline."""
         try:

@@ -76,7 +76,11 @@ class CrewAIBatchProcessor:
         return job
 
     def discover_jobs(
-        self, source_dir: str, form_template: str, output_dir: str, pattern: str = "**/*.pdf"
+        self,
+        source_dir: str,
+        form_template: str,
+        output_dir: str,
+        pattern: str = "**/*.pdf",
     ) -> int:
         """Automatically discover documents to process."""
         source_path = Path(source_dir)
@@ -115,7 +119,9 @@ class CrewAIBatchProcessor:
 
             # Process the document
             result = crew_processor.process_document(
-                str(job.source_path), str(job.form_path), str(job.output_path)
+                str(job.source_path),
+                str(job.form_path),
+                str(job.output_path),
             )
 
             if result.success:
@@ -125,7 +131,7 @@ class CrewAIBatchProcessor:
                 job.status = "failed"
                 job.error = result.error
                 self.logger.error(
-                    f"❌ Failed: {job.source_path.name} (Crew: {job.crew_id}) - {result.error}"
+                    f"❌ Failed: {job.source_path.name} (Crew: {job.crew_id}) - {result.error}",
                 )
 
         except Exception as e:
@@ -146,7 +152,7 @@ class CrewAIBatchProcessor:
         start_time = time.time()
         self.logger.info(f"Starting CrewAI batch processing of {len(self.jobs)} jobs")
         self.logger.info(
-            f"Configuration: {self.text_model} | {self.extraction_method} | {self.max_concurrent} workers"
+            f"Configuration: {self.text_model} | {self.extraction_method} | {self.max_concurrent} workers",
         )
 
         # Process jobs with ThreadPoolExecutor for true parallelism
@@ -164,7 +170,8 @@ class CrewAIBatchProcessor:
             console=self.console,
         ) as progress:
             overall_task = progress.add_task(
-                f"[bold]Processing {len(self.jobs)} documents...", total=len(self.jobs)
+                f"[bold]Processing {len(self.jobs)} documents...",
+                total=len(self.jobs),
             )
 
             with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
@@ -266,7 +273,7 @@ class CrewAIBatchProcessor:
             ],
         }
 
-        with open(output_path, "w") as f:
+        with Path(output_path).open("w") as f:
             json.dump(report, f, indent=2)
 
 
@@ -399,7 +406,7 @@ def process_from_file(ctx, jobs_file, report):
     )
 
     # Load jobs from file
-    with open(jobs_file) as f:
+    with Path(jobs_file).open() as f:
         jobs_data = json.load(f)
 
     for job_data in jobs_data.get("jobs", []):
@@ -464,12 +471,12 @@ def generate_jobs_file(output_file, source_dir, form, output_dir, pattern):
         "jobs": jobs,
     }
 
-    with open(output_file, "w") as f:
+    with Path(output_file).open("w") as f:
         json.dump(jobs_data, f, indent=2)
 
     click.echo(f"Generated CrewAI jobs file with {len(jobs)} jobs: {output_file}")
     click.echo(
-        f"Recommended concurrent crews: {jobs_data['configuration']['recommended_concurrent']}"
+        f"Recommended concurrent crews: {jobs_data['configuration']['recommended_concurrent']}",
     )
 
 
@@ -492,9 +499,12 @@ def crew_status():
 
     async def check_ollama():
         try:
-            async with aiohttp.ClientSession() as session, session.get(
-                "http://localhost:11434/api/tags"
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
+                    "http://localhost:11434/api/tags",
+                ) as response,
+            ):
                 if response.status == 200:
                     data = await response.json()
                     models = data.get("models", [])
@@ -512,17 +522,17 @@ def crew_status():
 
                     click.echo(f"✅ Ollama running with {len(models)} models")
                     click.echo(
-                        f"  - Text models: {len(text_models)} (for translation/form filling)"
+                        f"  - Text models: {len(text_models)} (for translation/form filling)",
                     )
                     click.echo(f"  - Vision models: {len(vision_models)} (for AI extraction)")
 
                     if len(text_models) == 0:
                         click.echo(
-                            "⚠️  No text models found. Install with: ollama pull llama3.2:3b"
+                            "⚠️  No text models found. Install with: ollama pull llama3.2:3b",
                         )
                     if len(vision_models) == 0:
                         click.echo(
-                            "⚠️  No vision models found. Install with: ollama pull llava:7b"
+                            "⚠️  No vision models found. Install with: ollama pull llava:7b",
                         )
 
                     return True

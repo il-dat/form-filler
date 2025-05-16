@@ -48,7 +48,10 @@ def show_version(ctx, param, value):
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 @click.option(
-    "--model", "-m", default="llama3.2:3b", help="Ollama model to use for text processing"
+    "--model",
+    "-m",
+    default="llama3.2:3b",
+    help="Ollama model to use for text processing",
 )
 @click.option(
     "--extraction-method",
@@ -59,7 +62,9 @@ def show_version(ctx, param, value):
 )
 @click.option("--vision-model", "-vm", default="llava:7b", help="Vision model for AI extraction")
 @click.option(
-    "--openai-api-key", envvar="OPENAI_API_KEY", help="OpenAI API key for OpenAI extraction method"
+    "--openai-api-key",
+    envvar="OPENAI_API_KEY",
+    help="OpenAI API key for OpenAI extraction method",
 )
 @click.option(
     "--openai-model",
@@ -117,7 +122,15 @@ def cli(ctx, verbose, model, extraction_method, vision_model, openai_api_key, op
 @click.option("--openai-model", help="OpenAI model for OpenAI extraction method")
 @click.pass_context
 def process(
-    ctx, source, form, output, model, extraction_method, vision_model, openai_api_key, openai_model
+    ctx,
+    source,
+    form,
+    output,
+    model,
+    extraction_method,
+    vision_model,
+    openai_api_key,
+    openai_model,
 ):
     """Process a Vietnamese document and fill an English DOCX form using CrewAI.
 
@@ -167,18 +180,18 @@ def process(
         console.print(f"Filled form saved to: [blue]{output}[/blue]")
         if result.metadata:
             console.print(
-                f"Extraction method: [yellow]{result.metadata.get('extraction_method', 'N/A')}[/yellow]"
+                f"Extraction method: [yellow]{result.metadata.get('extraction_method', 'N/A')}[/yellow]",
             )
             console.print(
-                f"Text model: [yellow]{result.metadata.get('text_model', 'N/A')}[/yellow]"
+                f"Text model: [yellow]{result.metadata.get('text_model', 'N/A')}[/yellow]",
             )
             if result.metadata.get("vision_model"):
                 console.print(
-                    f"Vision model: [yellow]{result.metadata.get('vision_model')}[/yellow]"
+                    f"Vision model: [yellow]{result.metadata.get('vision_model')}[/yellow]",
                 )
             if result.metadata.get("openai_model") and extraction_method == "openai":
                 console.print(
-                    f"OpenAI model: [yellow]{result.metadata.get('openai_model')}[/yellow]"
+                    f"OpenAI model: [yellow]{result.metadata.get('openai_model')}[/yellow]",
                 )
         if result.data and isinstance(result.data, dict):
             fields_filled = result.data.get("fields_filled", "N/A")
@@ -335,7 +348,7 @@ async def check_ollama(host: str, port: int, check_vision: bool) -> None:
                     else:
                         click.echo("  No vision models found. Install with: ollama pull llava:7b")
                         click.echo(
-                            "  Vision models enable AI-powered text extraction from images and PDFs"
+                            "  Vision models enable AI-powered text extraction from images and PDFs",
                         )
                         click.echo("  Supported models: llava:7b, llava:13b, bakllava")
 

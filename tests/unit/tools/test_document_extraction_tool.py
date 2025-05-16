@@ -77,7 +77,9 @@ def test_init_openai():
     openai_model = "gpt-4o-vision"
 
     tool = DocumentExtractionTool(
-        extraction_method="openai", openai_api_key=api_key, openai_model=openai_model
+        extraction_method="openai",
+        openai_api_key=api_key,
+        openai_model=openai_model,
     )
 
     assert tool.extraction_method == "openai"
@@ -111,7 +113,9 @@ def test_pdf_traditional_extraction(mock_exists, sample_pdf_content):
 
     # Directly patch the extraction method
     with patch.object(
-        DocumentExtractionTool, "_extract_from_pdf_traditional", return_value=sample_pdf_content
+        DocumentExtractionTool,
+        "_extract_from_pdf_traditional",
+        return_value=sample_pdf_content,
     ) as mock_extract:
         tool = DocumentExtractionTool(extraction_method="traditional")
         result = tool._run("/path/to/file.pdf")
@@ -145,7 +149,9 @@ def test_pdf_ai_extraction(mock_exists):
 
     # Directly patch the _extract_from_pdf_ai method
     with patch.object(
-        DocumentExtractionTool, "_extract_from_pdf_ai", return_value="AI extracted text"
+        DocumentExtractionTool,
+        "_extract_from_pdf_ai",
+        return_value="AI extracted text",
     ) as mock_extract_ai:
         tool = DocumentExtractionTool(extraction_method="ai")
         result = tool._run("/path/to/file.pdf")
@@ -162,7 +168,9 @@ def test_pdf_openai_extraction(mock_exists):
     # Directly patch the _extract_from_pdf_openai method
     combined_text = "\n--- Page 1 ---\nOpenAI extracted text page 1\n--- Page 2 ---\nOpenAI extracted text page 2"
     with patch.object(
-        DocumentExtractionTool, "_extract_from_pdf_openai", return_value=combined_text
+        DocumentExtractionTool,
+        "_extract_from_pdf_openai",
+        return_value=combined_text,
     ) as mock_extract_openai:
         # Create tool with OpenAI config
         tool = DocumentExtractionTool(
@@ -231,12 +239,17 @@ def test_image_ai_extraction_fallback(mock_exists, sample_image_content):
     # and that the extraction method falls back to traditional in case of error
 
     # Patch both methods
-    with patch.object(
-        DocumentExtractionTool, "_extract_from_image_ai", side_effect=Exception("AI model error")
-    ), patch.object(
-        DocumentExtractionTool,
-        "_extract_from_image_traditional",
-        return_value=sample_image_content,
+    with (
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_image_ai",
+            side_effect=Exception("AI model error"),
+        ),
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_image_traditional",
+            return_value=sample_image_content,
+        ),
     ):
         # Create the tool and patch the _run method to call our patched methods
         tool = DocumentExtractionTool(extraction_method="ai")
@@ -267,14 +280,17 @@ def test_image_openai_extraction_fallback(mock_exists, sample_image_content):
     # This test will verify that _run correctly delegates to _extract_from_image_openai
     # and that the extraction method falls back to traditional in case of error
 
-    with patch.object(
-        DocumentExtractionTool,
-        "_extract_from_image_openai",
-        side_effect=Exception("OpenAI API error"),
-    ), patch.object(
-        DocumentExtractionTool,
-        "_extract_from_image_traditional",
-        return_value=sample_image_content,
+    with (
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_image_openai",
+            side_effect=Exception("OpenAI API error"),
+        ),
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_image_traditional",
+            return_value=sample_image_content,
+        ),
     ):
         # Create the tool
         tool = DocumentExtractionTool(
@@ -307,12 +323,17 @@ def test_pdf_ai_extraction_fallback(mock_exists, sample_pdf_content):
     mock_exists.return_value = True
 
     # Patch the necessary methods for testing fallback
-    with patch.object(
-        DocumentExtractionTool,
-        "_extract_from_pdf_ai",
-        side_effect=Exception("AI extraction error"),
-    ), patch.object(
-        DocumentExtractionTool, "_extract_from_pdf_traditional", return_value=sample_pdf_content
+    with (
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_pdf_ai",
+            side_effect=Exception("AI extraction error"),
+        ),
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_pdf_traditional",
+            return_value=sample_pdf_content,
+        ),
     ):
         # Create the tool
         tool = DocumentExtractionTool(extraction_method="ai")
@@ -341,12 +362,17 @@ def test_pdf_openai_extraction_fallback(mock_exists, sample_pdf_content):
     mock_exists.return_value = True
 
     # Patch the necessary methods for testing fallback
-    with patch.object(
-        DocumentExtractionTool,
-        "_extract_from_pdf_openai",
-        side_effect=Exception("OpenAI extraction error"),
-    ), patch.object(
-        DocumentExtractionTool, "_extract_from_pdf_traditional", return_value=sample_pdf_content
+    with (
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_pdf_openai",
+            side_effect=Exception("OpenAI extraction error"),
+        ),
+        patch.object(
+            DocumentExtractionTool,
+            "_extract_from_pdf_traditional",
+            return_value=sample_pdf_content,
+        ),
     ):
         # Create the tool
         tool = DocumentExtractionTool(
@@ -383,7 +409,9 @@ def test_pdf_with_multiple_pages(mock_exists):
 
     # Patch the _extract_from_pdf_traditional method to return our mock content
     with patch.object(
-        DocumentExtractionTool, "_extract_from_pdf_traditional", return_value=multipage_content
+        DocumentExtractionTool,
+        "_extract_from_pdf_traditional",
+        return_value=multipage_content,
     ):
         # Create the tool
         tool = DocumentExtractionTool(extraction_method="traditional")
@@ -416,7 +444,9 @@ def test_extract_from_image_ai_response_formats(mock_b64encode, mock_open, mock_
 
         # Mock _extract_from_image_ai directly to avoid file operations
         with patch.object(
-            DocumentExtractionTool, "_extract_from_image_ai", return_value="Extracted text content"
+            DocumentExtractionTool,
+            "_extract_from_image_ai",
+            return_value="Extracted text content",
         ) as mock_extract1:
             tool1 = DocumentExtractionTool(extraction_method="ai")
             assert tool1._ollama_llm is not None
@@ -431,7 +461,9 @@ def test_extract_from_image_ai_response_formats(mock_b64encode, mock_open, mock_
 
         # Mock _extract_from_image_ai directly for the second test
         with patch.object(
-            DocumentExtractionTool, "_extract_from_image_ai", return_value="AI extracted text"
+            DocumentExtractionTool,
+            "_extract_from_image_ai",
+            return_value="AI extracted text",
         ) as mock_extract2:
             tool2 = DocumentExtractionTool(extraction_method="ai")
             result2 = tool2._run("/path/to/image.jpg")

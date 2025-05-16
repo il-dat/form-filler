@@ -171,7 +171,7 @@ def wrap_process_with_progress(
             except Exception as e:
                 progress.stop()
                 # Using the console defined above
-                console.print(f"{error_message}: {str(e)}")
+                console.print(f"{error_message}: {e!s}")
                 raise
 
     return wrapper

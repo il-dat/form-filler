@@ -44,7 +44,7 @@ class FormAnalysisTool(BaseTool):
                             "____" in cell_text or "[" in cell_text or cell_text.endswith(":")
                         ):
                             form_fields.append(
-                                {"type": "table_cell", "text": cell_text, "placeholder": True}
+                                {"type": "table_cell", "text": cell_text, "placeholder": True},
                             )
 
             return json.dumps(form_fields, indent=2)

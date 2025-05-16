@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 @click.option(
-    "--model", "-m", default="llama3.2:3b", help="Ollama model to use for text processing"
+    "--model",
+    "-m",
+    default="llama3.2:3b",
+    help="Ollama model to use for text processing",
 )
 @click.option("--crews", "-c", default=2, help="Number of concurrent CrewAI teams to use")
 @click.option(

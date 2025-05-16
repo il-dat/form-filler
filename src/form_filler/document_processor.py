@@ -34,7 +34,8 @@ from PIL import Image
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ class DocumentExtractionTool(BaseTool):
                 try:
                     # Use AI to extract text from image
                     page_text = self._extract_from_image_ai(Path(tmp_img_path))
-                    images_text.append(f"\n--- Page {page_num+1} ---\n{page_text}")
+                    images_text.append(f"\n--- Page {page_num + 1} ---\n{page_text}")
                 finally:
                     # Clean up temporary image
                     Path(tmp_img_path).unlink()
@@ -142,7 +143,7 @@ class DocumentExtractionTool(BaseTool):
             # Convert image to base64 for AI processing
             import base64
 
-            with open(file_path, "rb") as img_file:
+            with Path(file_path).open("rb") as img_file:
                 base64_image = base64.b64encode(img_file.read()).decode("utf-8")
 
             # Create prompt for text extraction
@@ -234,7 +235,7 @@ class FormAnalysisTool(BaseTool):
                         cell_text = cell.text.strip()
                         if cell_text and ("____" in cell_text or "[" in cell_text):
                             form_fields.append(
-                                {"type": "table_cell", "text": cell_text, "placeholder": True}
+                                {"type": "table_cell", "text": cell_text, "placeholder": True},
                             )
 
             return json.dumps(form_fields, indent=2)
@@ -256,7 +257,11 @@ class FormFillingTool(BaseTool):
         self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
 
     def _run(
-        self, form_path: str, translated_text: str, output_path: str, field_mappings: str = None
+        self,
+        form_path: str,
+        translated_text: str,
+        output_path: str,
+        field_mappings: str | None = None,
     ) -> str:
         """Fill the form with mapped content."""
         try:
@@ -311,7 +316,7 @@ class FormFillingTool(BaseTool):
                     "output_path": output_path,
                     "fields_filled": filled_count,
                     "total_mappings": len(field_mappings_list),
-                }
+                },
             )
 
         except Exception as e:
@@ -377,7 +382,7 @@ Consider the context and purpose of each field. Return only valid JSON in this f
                         "field_text": field_text,
                         "fill_with": content_parts[i][:100],  # Limit length
                         "confidence": 0.5,
-                    }
+                    },
                 )
 
         return mappings
@@ -396,7 +401,7 @@ Consider the context and purpose of each field. Return only valid JSON in this f
                             "field_text": field.get("text", ""),
                             "fill_with": content_parts[i][:100],
                             "confidence": 0.5,
-                        }
+                        },
                     )
 
             return json.dumps({"field_mappings": mappings})
@@ -406,7 +411,8 @@ Consider the context and purpose of each field. Return only valid JSON in this f
 
 # CrewAI Agents
 def create_document_collector_agent(
-    extraction_method: str = "traditional", vision_model: str = "llava:7b"
+    extraction_method: str = "traditional",
+    vision_model: str = "llava:7b",
 ) -> Agent:
     """Create the document collection agent."""
     return Agent(
@@ -416,7 +422,7 @@ def create_document_collector_agent(
         You can handle both traditional OCR methods and cutting-edge AI vision models to extract text from various document formats.
         Your expertise includes processing Vietnamese documents with proper diacritics and special characters.""",
         tools=[
-            DocumentExtractionTool(extraction_method=extraction_method, vision_model=vision_model)
+            DocumentExtractionTool(extraction_method=extraction_method, vision_model=vision_model),
         ],
         verbose=True,
         allow_delegation=False,
@@ -486,7 +492,10 @@ class DocumentProcessingCrew:
         self.vision_model = vision_model
 
     def process_document(
-        self, source_path: str, form_path: str, output_path: str
+        self,
+        source_path: str,
+        form_path: str,
+        output_path: str,
     ) -> ProcessingResult:
         """Process a document through the CrewAI pipeline."""
         try:
@@ -498,7 +507,7 @@ class DocumentProcessingCrew:
                 - Extract all visible text including Vietnamese diacritics
                 - Preserve formatting and structure where possible
                 - Handle both text-based and image-based content
-                - Use {'AI vision models' if self.extraction_method == 'ai' else 'traditional OCR methods'}
+                - Use {"AI vision models" if self.extraction_method == "ai" else "traditional OCR methods"}
 
                 Return the complete extracted text.""",
                 agent=self.document_collector,
@@ -609,7 +618,10 @@ class DocumentProcessingCrew:
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 @click.option(
-    "--model", "-m", default="llama3.2:3b", help="Ollama model to use for text processing"
+    "--model",
+    "-m",
+    default="llama3.2:3b",
+    help="Ollama model to use for text processing",
 )
 @click.option(
     "--extraction-method",
@@ -673,7 +685,9 @@ def process(ctx, source, form, output, model, extraction_method, vision_model):
 
     # Create CrewAI processor
     crew_processor = DocumentProcessingCrew(
-        text_model=model, extraction_method=extraction_method, vision_model=vision_model
+        text_model=model,
+        extraction_method=extraction_method,
+        vision_model=vision_model,
     )
 
     # Process the document
@@ -718,7 +732,8 @@ def extract(ctx, file_path, extraction_method, vision_model):
 
     # Create extraction tool
     extractor = DocumentExtractionTool(
-        extraction_method=extraction_method, vision_model=vision_model
+        extraction_method=extraction_method,
+        vision_model=vision_model,
     )
 
     try:
@@ -808,7 +823,7 @@ async def check_ollama(host, port, check_vision):
                     else:
                         click.echo("  No vision models found. Install with: ollama pull llava:7b")
                         click.echo(
-                            "  Vision models enable AI-powered text extraction from images and PDFs"
+                            "  Vision models enable AI-powered text extraction from images and PDFs",
                         )
                         click.echo("  Supported models: llava:7b, llava:13b, bakllava")
 

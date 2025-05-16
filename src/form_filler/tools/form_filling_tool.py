@@ -32,7 +32,11 @@ class FormFillingTool(BaseTool):
         self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
 
     def _run(
-        self, form_path: str, translated_text: str, output_path: str, field_mappings: str = None
+        self,
+        form_path: str,
+        translated_text: str,
+        output_path: str,
+        field_mappings: str | None = None,
     ) -> str:
         """Fill the form with mapped content."""
         try:
@@ -87,7 +91,7 @@ class FormFillingTool(BaseTool):
                     "output_path": output_path,
                     "fields_filled": filled_count,
                     "total_mappings": len(field_mappings_list),
-                }
+                },
             )
 
         except Exception as e:
@@ -153,7 +157,7 @@ Consider the context and purpose of each field. Return only valid JSON in this f
                         "field_text": field_text,
                         "fill_with": content_parts[i][:100],  # Limit length
                         "confidence": 0.5,
-                    }
+                    },
                 )
 
         return mappings
@@ -172,7 +176,7 @@ Consider the context and purpose of each field. Return only valid JSON in this f
                             "field_text": field.get("text", ""),
                             "fill_with": content_parts[i][:100],
                             "confidence": 0.5,
-                        }
+                        },
                     )
 
             return json.dumps({"field_mappings": mappings})

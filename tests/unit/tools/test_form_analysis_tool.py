@@ -6,8 +6,8 @@ Includes tests for various field types, error handling, and edge cases.
 """
 
 import json
-import os
 import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -198,8 +198,8 @@ def test_with_real_temp_file():
                 mock_document_class.assert_called_once_with(temp_path)
         finally:
             # Clean up
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
+            if Path(temp_path).exists():
+                Path(temp_path).unlink()
     except ImportError:
         pytest.skip("python-docx not installed, skipping test")
 

@@ -35,7 +35,8 @@ def test_init():
         assert tool.name == "vietnamese_translator"
         assert "Translate Vietnamese text to English" in tool.description
         mock_chat_ollama.assert_called_once_with(
-            model="llama3.2:3b", base_url="http://localhost:11434"
+            model="llama3.2:3b",
+            base_url="http://localhost:11434",
         )
 
 
@@ -52,7 +53,9 @@ def test_run_empty_text():
 
 @patch("form_filler.tools.translation_tool.ChatOllama")
 def test_run_successful_translation(
-    mock_chat_ollama, sample_vietnamese_text, sample_english_translation
+    mock_chat_ollama,
+    sample_vietnamese_text,
+    sample_english_translation,
 ):
     """Test successful translation from Vietnamese to English."""
     # Create mock ChatOllama instance
@@ -86,7 +89,9 @@ def test_run_successful_translation(
 
 @patch("form_filler.tools.translation_tool.ChatOllama")
 def test_run_older_llm_response_format(
-    mock_chat_ollama, sample_vietnamese_text, sample_english_translation
+    mock_chat_ollama,
+    sample_vietnamese_text,
+    sample_english_translation,
 ):
     """Test handling of older LLM response format without content attribute."""
     # Create mock ChatOllama instance

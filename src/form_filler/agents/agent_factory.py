@@ -18,7 +18,7 @@ from form_filler.tools import (
 def create_document_collector_agent(
     extraction_method: str = "traditional",
     vision_model: str = "llava:7b",
-    openai_api_key: str = None,
+    openai_api_key: str | None = None,
     openai_model: str = "gpt-4-vision-preview",
 ) -> Agent:
     """Create the document collection agent.
@@ -45,7 +45,7 @@ def create_document_collector_agent(
                 vision_model=vision_model,
                 openai_api_key=openai_api_key,
                 openai_model=openai_model,
-            )
+            ),
         ],
         verbose=True,
         allow_delegation=False,

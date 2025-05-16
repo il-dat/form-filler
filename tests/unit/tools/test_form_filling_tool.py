@@ -85,7 +85,7 @@ def sample_field_mappings():
                 "fill_with": "Software Engineer",
                 "confidence": 0.9,
             },
-        ]
+        ],
     }
     return json.dumps(mappings)
 
@@ -101,7 +101,8 @@ def test_init():
         assert tool.name == "form_filler"
         assert "Fill DOCX form fields with provided content" in tool.description
         mock_chat_ollama.assert_called_once_with(
-            model="llama3.2:3b", base_url="http://localhost:11434"
+            model="llama3.2:3b",
+            base_url="http://localhost:11434",
         )
 
 
@@ -140,7 +141,7 @@ def test_run_with_ai_mappings(
             {"type": "paragraph", "text": "Phone number:", "placeholder": True},
             {"type": "table_cell", "text": "Date of birth: ____", "placeholder": True},
             {"type": "table_cell", "text": "Occupation [specify]", "placeholder": True},
-        ]
+        ],
     )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
@@ -175,7 +176,10 @@ def test_run_with_ai_mappings(
 
 @patch("form_filler.tools.form_filling_tool.Document")
 def test_run_with_provided_mappings(
-    mock_document_class, mock_docx_document, sample_translated_text, sample_field_mappings
+    mock_document_class,
+    mock_docx_document,
+    sample_translated_text,
+    sample_field_mappings,
 ):
     """Test form filling with provided field mappings."""
     # Setup Document mock
@@ -229,7 +233,7 @@ def test_run_with_invalid_mappings_json(
         [
             {"type": "paragraph", "text": "Name: ____", "placeholder": True},
             {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
-        ]
+        ],
     )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
@@ -276,7 +280,7 @@ def test_ai_mapping_error(
         [
             {"type": "paragraph", "text": "Name: ____", "placeholder": True},
             {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
-        ]
+        ],
     )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
@@ -296,8 +300,8 @@ def test_ai_mapping_error(
                         "fill_with": "123 Main Street",
                         "confidence": 0.5,
                     },
-                ]
-            }
+                ],
+            },
         )
 
         tool = FormFillingTool(model="llama3.2:3b")
@@ -341,7 +345,7 @@ def test_create_fallback_json():
         [
             {"type": "paragraph", "text": "Name: ____", "placeholder": True},
             {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
-        ]
+        ],
     )
 
     sample_content = "John Smith\n123 Main Street"
@@ -398,7 +402,7 @@ def test_complex_paragraph_replacement(mock_chat_ollama, mock_form_analyzer, moc
     # Setup FormAnalysisTool mock
     mock_analyzer_instance = MagicMock()
     mock_analyzer_instance._run.return_value = json.dumps(
-        [{"type": "paragraph", "text": "Name: ____ (enter full name)", "placeholder": True}]
+        [{"type": "paragraph", "text": "Name: ____ (enter full name)", "placeholder": True}],
     )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
@@ -412,9 +416,9 @@ def test_complex_paragraph_replacement(mock_chat_ollama, mock_form_analyzer, moc
                     "field_text": "Name: ____ (enter full name)",
                     "fill_with": "John Smith",
                     "confidence": 0.95,
-                }
-            ]
-        }
+                },
+            ],
+        },
     )
     mock_chat_ollama_instance.invoke.return_value = mock_response
     mock_chat_ollama.return_value = mock_chat_ollama_instance
@@ -442,7 +446,7 @@ def test_invalid_json_mapping_format(mock_document_class):
     # Setup fallback method
     with patch.object(FormFillingTool, "_create_fallback_mappings") as mock_fallback:
         mock_fallback.return_value = [
-            {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.5}
+            {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.5},
         ]
 
         # Create a local json.loads that will raise an exception only for a specific input
@@ -457,7 +461,10 @@ def test_invalid_json_mapping_format(mock_document_class):
         with patch("form_filler.tools.form_filling_tool.json.loads", side_effect=patched_loads):
             tool = FormFillingTool(model="llama3.2:3b")
             result = tool._run(
-                "/path/to/form.docx", "John Smith", "/path/to/output.docx", "Invalid JSON mapping"
+                "/path/to/form.docx",
+                "John Smith",
+                "/path/to/output.docx",
+                "Invalid JSON mapping",
             )
 
             # Verify fallback method was called
@@ -483,9 +490,9 @@ def test_empty_form_fields(mock_document_class):
     field_mappings = json.dumps(
         {
             "field_mappings": [
-                {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.95}
-            ]
-        }
+                {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.95},
+            ],
+        },
     )
 
     result = tool._run("/path/to/form.docx", "John Smith", "/path/to/output.docx", field_mappings)

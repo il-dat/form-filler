@@ -26,7 +26,8 @@ from form_filler.utils import get_logger, setup_logging
 
 # Setup basic logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 # Version information
@@ -42,28 +43,21 @@ __email__ = "datnguyen.it09@gmail.com"
 
 # Main exports
 __all__ = [
-    # Models
-    "ProcessingResult",
-    # Tools
     "DocumentExtractionTool",
-    "TranslationTool",
+    "DocumentProcessingCrew",
     "FormAnalysisTool",
     "FormFillingTool",
-    # Agents
-    "create_document_collector_agent",
-    "create_translator_agent",
-    "create_form_analyst_agent",
-    "create_form_filler_agent",
-    # Crew
-    "DocumentProcessingCrew",
-    # CLI
-    "cli",
-    "main",
-    # Utils
-    "setup_logging",
-    "get_logger",
-    # Version info
-    "__version__",
+    "ProcessingResult",
+    "TranslationTool",
     "__author__",
     "__email__",
+    "__version__",
+    "cli",
+    "create_document_collector_agent",
+    "create_form_analyst_agent",
+    "create_form_filler_agent",
+    "create_translator_agent",
+    "get_logger",
+    "main",
+    "setup_logging",
 ]

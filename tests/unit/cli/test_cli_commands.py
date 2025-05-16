@@ -4,8 +4,8 @@ Unit tests for CLI commands.
 Tests the CLI command structure and basic functionality.
 """
 
-import os
 import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -36,7 +36,10 @@ def mock_processing_result_success():
 def mock_processing_result_failure():
     """Create a failed processing result."""
     return ProcessingResult(
-        success=False, data=None, error="Failed to process document", metadata=None
+        success=False,
+        data=None,
+        error="Failed to process document",
+        metadata=None,
     )
 
 
@@ -82,10 +85,14 @@ def test_process_command_success(mock_crew, runner, mock_processing_result_succe
     mock_instance.process_document.return_value = mock_processing_result_success
     mock_crew.return_value = mock_instance
 
-    with tempfile.NamedTemporaryFile(suffix=".pdf") as source_file, tempfile.NamedTemporaryFile(
-        suffix=".docx"
-    ) as form_file, tempfile.TemporaryDirectory() as temp_dir:
-        output_path = os.path.join(temp_dir, "output.docx")
+    with (
+        tempfile.NamedTemporaryFile(suffix=".pdf") as source_file,
+        tempfile.NamedTemporaryFile(
+            suffix=".docx",
+        ) as form_file,
+        tempfile.TemporaryDirectory() as temp_dir,
+    ):
+        output_path = Path(temp_dir) / "output.docx"
 
         # Run the command
         result = runner.invoke(
@@ -116,7 +123,9 @@ def test_process_command_success(mock_crew, runner, mock_processing_result_succe
             openai_model="gpt-4-vision-preview",  # Default value
         )
         mock_instance.process_document.assert_called_once_with(
-            source_file.name, form_file.name, output_path
+            source_file.name,
+            form_file.name,
+            output_path,
         )
 
 
@@ -132,10 +141,14 @@ def test_process_command_with_openai(mock_crew, runner, mock_processing_result_s
     mock_instance.process_document.return_value = openai_result
     mock_crew.return_value = mock_instance
 
-    with tempfile.NamedTemporaryFile(suffix=".pdf") as source_file, tempfile.NamedTemporaryFile(
-        suffix=".docx"
-    ) as form_file, tempfile.TemporaryDirectory() as temp_dir:
-        output_path = os.path.join(temp_dir, "output.docx")
+    with (
+        tempfile.NamedTemporaryFile(suffix=".pdf") as source_file,
+        tempfile.NamedTemporaryFile(
+            suffix=".docx",
+        ) as form_file,
+        tempfile.TemporaryDirectory() as temp_dir,
+    ):
+        output_path = Path(temp_dir) / "output.docx"
 
         # Run the command with OpenAI parameters
         result = runner.invoke(
@@ -171,7 +184,9 @@ def test_process_command_with_openai(mock_crew, runner, mock_processing_result_s
             openai_model="gpt-4o-vision",
         )
         mock_instance.process_document.assert_called_once_with(
-            source_file.name, form_file.name, output_path
+            source_file.name,
+            form_file.name,
+            output_path,
         )
 
 
@@ -182,10 +197,14 @@ def test_process_command_failure(mock_crew, runner, mock_processing_result_failu
     mock_instance.process_document.return_value = mock_processing_result_failure
     mock_crew.return_value = mock_instance
 
-    with tempfile.NamedTemporaryFile(suffix=".pdf") as source_file, tempfile.NamedTemporaryFile(
-        suffix=".docx"
-    ) as form_file, tempfile.TemporaryDirectory() as temp_dir:
-        output_path = os.path.join(temp_dir, "output.docx")
+    with (
+        tempfile.NamedTemporaryFile(suffix=".pdf") as source_file,
+        tempfile.NamedTemporaryFile(
+            suffix=".docx",
+        ) as form_file,
+        tempfile.TemporaryDirectory() as temp_dir,
+    ):
+        output_path = Path(temp_dir) / "output.docx"
 
         # Run the command with mocked sys.exit to prevent test from actually exiting
         with patch("sys.exit") as mock_exit:
@@ -208,7 +227,8 @@ def test_extract_command(mock_extraction_tool, runner):
     with tempfile.NamedTemporaryFile(suffix=".pdf") as source_file:
         # Run the command
         result = runner.invoke(
-            cli, ["--extraction-method", "traditional", "extract", source_file.name]
+            cli,
+            ["--extraction-method", "traditional", "extract", source_file.name],
         )
 
         # Check the result
