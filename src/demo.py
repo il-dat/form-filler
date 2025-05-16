@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """
-CrewAI Demo script for Vietnamese Document Form Filler
-Shows CrewAI-powered multi-agent capabilities
+CrewAI Demo script for Vietnamese Document Form Filler.
+
+Shows CrewAI-powered multi-agent capabilities.
 """
 
 import asyncio
 import json
+import os
 import tempfile
+import time
 from pathlib import Path
 
+from batch_processor import BatchProcessor
+from document_processor import DocumentProcessor
+
 from form_filler.batch_processor import CrewAIBatchProcessor
-from form_filler.crew import DocumentProcessingCrew
+from form_filler.crew.document_processing_crew import DocumentProcessingCrew
 
 # Demo data - sample Vietnamese text
 SAMPLE_VIETNAMESE_TEXT = """
@@ -65,7 +71,7 @@ ___________________________________________
 
 
 def demo_crewai_single_document():
-    """Demonstrate CrewAI single document processing"""
+    """Demonstrate CrewAI single document processing."""
     print("🤖 Demo 1: CrewAI Single Document Processing")
     print("-" * 50)
 
@@ -105,7 +111,7 @@ def demo_crewai_single_document():
 
         # Show agent collaboration results
         if Path(output_path).exists():
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 print("\n📋 CrewAI Filled Form Preview:")
                 print(content[:300] + "..." if len(content) > 300 else content)
@@ -127,7 +133,7 @@ def demo_crewai_single_document():
 
 
 def demo_crewai_agent_capabilities():
-    """Demonstrate individual CrewAI agent capabilities"""
+    """Demonstrate individual CrewAI agent capabilities."""
     print("🤖 Demo 2: CrewAI Agent Capabilities")
     print("-" * 50)
 
@@ -161,9 +167,9 @@ def demo_crewai_agent_capabilities():
         form_path = form_file.name
 
     form_analyzer = FormAnalysisTool()
-    form_analysis = form_analyzer._run(form_path)
+    form_analyzer._run(form_path)
     print("✅ Form analysis completed")
-    print(f"📝 Found form fields in structure")
+    print("📝 Found form fields in structure")
 
     print("\n🔧 CrewAI Tool 4: FormFillingTool")
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as output_file:
@@ -183,7 +189,7 @@ def demo_crewai_agent_capabilities():
 
 
 def demo_crewai_batch_processing():
-    """Demonstrate CrewAI batch processing"""
+    """Demonstrate CrewAI batch processing."""
     print("🤖 Demo 3: CrewAI Batch Processing")
     print("-" * 50)
 
@@ -232,8 +238,8 @@ def demo_crewai_batch_processing():
 
     print(f"🔍 Discovered {job_count} processing jobs")
     print("🤖 CrewAI Configuration:")
-    print(f"  - Max concurrent crews: 2")
-    print(f"  - Each crew has 4 specialized agents")
+    print("  - Max concurrent crews: 2")
+    print("  - Each crew has 4 specialized agents")
     print(f"  - Total agents working: {job_count * 4} (across all crews)")
 
     # Progress callback
@@ -249,7 +255,7 @@ def demo_crewai_batch_processing():
     print("Multiple crews working in parallel...")
     stats = batch_processor.process_all(progress_callback)
 
-    print(f"\n📊 CrewAI Batch Processing Results:")
+    print("\n📊 CrewAI Batch Processing Results:")
     print(f"Total: {stats['total']}")
     print(f"Completed: {stats['completed']}")
     print(f"Failed: {stats['failed']}")
@@ -267,9 +273,9 @@ def demo_crewai_batch_processing():
     print("\n")
 
 
-def demo_crewai_ai_vs_traditional():
-    """Compare CrewAI AI vs Traditional extraction methods"""
-    print("🤖 Demo 4: CrewAI AI vs Traditional Extraction")
+def demo_crewai_extraction_methods():
+    """Compare CrewAI extraction methods (Traditional, AI, OpenAI)."""
+    print("🤖 Demo 4: CrewAI Extraction Methods Comparison")
     print("-" * 50)
 
     # Create sample document
@@ -289,7 +295,6 @@ def demo_crewai_ai_vs_traditional():
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as output_file:
         output_traditional = output_file.name
-    import time
 
     start_time = time.time()
     result_traditional = traditional_crew.process_document(
@@ -302,27 +307,48 @@ def demo_crewai_ai_vs_traditional():
 
     # Test AI Method (simulated - would require vision model)
     print("\n🧠 Testing AI Extraction with CrewAI...")
-    ai_crew = DocumentProcessingCrew(
+    # Simulate AI configuration without actually running it since it requires vision model
+    DocumentProcessingCrew(
         text_model="llama3.2:3b", extraction_method="ai", vision_model="llava:7b"
     )
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as output_file:
-        output_ai = output_file.name
-    start_time = time.time()
     # Note: This would require actual vision model installation
     print("   ⚠️ AI extraction requires vision model (llava:7b)")
     print("   Demo shows configuration and workflow")
-    ai_time = time.time() - start_time
 
-    print(f"⚙️ AI method configuration ready")
-    print(f"   Agents: DocumentCollector (AI) → Translator → FormAnalyst → FormFiller")
-    print(f"   Vision Model: llava:7b (if available)")
+    print("⚙️ AI method configuration ready")
+    print("   Agents: DocumentCollector (AI) → Translator → FormAnalyst → FormFiller")
+    print("   Vision Model: llava:7b (if available)")
 
-    # Comparison
-    print(f"\n📊 CrewAI Method Comparison:")
-    print(f"Traditional: Fast, reliable for clean text")
-    print(f"AI: Better for complex layouts, handwriting, scanned documents")
-    print(f"Both: Use same collaborative agent framework")
+    # Test OpenAI Method (requires API key)
+    print("\n☁️ Testing OpenAI Extraction with CrewAI...")
+    openai_api_key = os.environ.get("OPENAI_API_KEY")
+
+    if openai_api_key:
+        # Create OpenAI-based crew
+        DocumentProcessingCrew(
+            text_model="llama3.2:3b",
+            extraction_method="openai",
+            vision_model="llava:7b",
+            openai_api_key=openai_api_key,
+            openai_model="gpt-4-vision-preview",
+        )
+
+        print("   ℹ️ Using OpenAI API for extraction")
+        print("   Demo shows configuration and workflow")
+        print("⚙️ OpenAI method configuration ready")
+        print("   Agents: DocumentCollector (OpenAI) → Translator → FormAnalyst → FormFiller")
+        print("   OpenAI Model: gpt-4-vision-preview")
+    else:
+        print("   ⚠️ OpenAI extraction requires API key")
+        print("   To test, set OPENAI_API_KEY environment variable")
+
+    # Comparison of all methods
+    print("\n📊 CrewAI Extraction Method Comparison:")
+    print("Traditional: Fast, reliable for clean text documents")
+    print("AI: Better for complex layouts, handwriting using local models")
+    print("OpenAI: Highest accuracy for complex documents using cloud API")
+    print("All: Use same collaborative CrewAI agent framework")
 
     # Cleanup
     Path(temp_path).unlink()
@@ -334,7 +360,7 @@ def demo_crewai_ai_vs_traditional():
 
 
 def demo_crewai_error_handling():
-    """Demonstrate CrewAI error handling and recovery"""
+    """Demonstrate CrewAI error handling and recovery."""
     print("🤖 Demo 5: CrewAI Error Handling")
     print("-" * 50)
 
@@ -349,9 +375,7 @@ def demo_crewai_error_handling():
     # Test 2: Invalid configuration
     print("\n🧪 Test 2: Invalid model configuration")
     try:
-        invalid_crew = DocumentProcessingCrew(
-            text_model="non_existent_model", extraction_method="traditional"
-        )
+        DocumentProcessingCrew(text_model="non_existent_model", extraction_method="traditional")
         print("✅ CrewAI validated configuration and provided fallback")
     except Exception as e:
         print(f"✅ CrewAI caught configuration error: {e}")
@@ -369,7 +393,7 @@ def demo_crewai_error_handling():
 
 
 def demo_crewai_configuration():
-    """Show CrewAI configuration options"""
+    """Show CrewAI configuration options."""
     print("🤖 Demo 6: CrewAI Configuration Options")
     print("-" * 50)
 
@@ -382,17 +406,24 @@ def demo_crewai_configuration():
             "description": "Optimized for speed with traditional extraction",
         },
         {
-            "name": "High Accuracy",
+            "name": "High Accuracy (Local)",
             "text_model": "llama3.1:8b",
             "extraction_method": "ai",
             "vision_model": "llava:13b",
-            "description": "Maximum accuracy with larger models",
+            "description": "Maximum accuracy with larger local models",
         },
         {
             "name": "Balanced",
             "text_model": "qwen2.5:7b",
             "extraction_method": "traditional",
             "description": "Good balance of speed and quality",
+        },
+        {
+            "name": "Cloud-Powered",
+            "text_model": "llama3.2:3b",
+            "extraction_method": "openai",
+            "openai_model": "gpt-4-vision-preview",
+            "description": "Maximum accuracy using OpenAI's vision API",
         },
     ]
 
@@ -403,14 +434,16 @@ def demo_crewai_configuration():
         print(f"   Extraction: {config['extraction_method']}")
         if config.get("vision_model"):
             print(f"   Vision Model: {config['vision_model']}")
+        if config.get("openai_model"):
+            print(f"   OpenAI Model: {config['openai_model']}")
         print(f"   Use Case: {config['description']}")
 
-    print(f"\n🔧 CrewAI Advanced Settings:")
-    print(f"   - Process Type: Sequential (default) | Hierarchical")
-    print(f"   - Max Retries: 3 per task")
-    print(f"   - Timeout: Configurable per agent")
-    print(f"   - Verbose Mode: Detailed agent logging")
-    print(f"   - Memory: Shared context between agents")
+    print("\n🔧 CrewAI Advanced Settings:")
+    print("   - Process Type: Sequential (default) | Hierarchical")
+    print("   - Max Retries: 3 per task")
+    print("   - Timeout: Configurable per agent")
+    print("   - Verbose Mode: Detailed agent logging")
+    print("   - Memory: Shared context between agents")
 
     print("\n⚙️ Agent-Specific Configuration:")
     print("   DocumentCollector: Extraction method, vision model")
@@ -422,7 +455,7 @@ def demo_crewai_configuration():
 
 
 def main():
-    """Run all CrewAI demos"""
+    """Run all CrewAI demos."""
     print("🚀 Vietnamese Document Form Filler - CrewAI Demo")
     print("=" * 60)
     print("This demo showcases the CrewAI-powered multi-agent")
@@ -435,26 +468,31 @@ def main():
 
         print(f"✅ CrewAI installed: v{crewai.__version__}")
 
-        from crewai_tools import tool
+        # Check if crewai_tools is available
+        try:
+            import crewai_tools  # noqa
 
-        print("✅ CrewAI Tools available")
+            print("✅ CrewAI Tools available")
+        except ImportError:
+            print("⚠️ CrewAI Tools not available")
 
         # Check Ollama
         import aiohttp
 
         async def check_ollama():
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get("http://localhost:11434/api/tags") as response:
-                        if response.status == 200:
-                            print("✅ Ollama is running")
-                            data = await response.json()
-                            models = [m["name"] for m in data.get("models", [])]
-                            print(f"Available models: {', '.join(models[:3])}...")
-                            return True
-                        else:
-                            print("❌ Ollama is not responding")
-                            return False
+                async with aiohttp.ClientSession() as session, session.get(
+                    "http://localhost:11434/api/tags"
+                ) as response:
+                    if response.status == 200:
+                        print("✅ Ollama is running")
+                        data = await response.json()
+                        models = [m["name"] for m in data.get("models", [])]
+                        print(f"Available models: {', '.join(models[:3])}...")
+                        return True
+                    else:
+                        print("❌ Ollama is not responding")
+                        return False
             except Exception as e:
                 print(f"❌ Cannot connect to Ollama: {e}")
                 return False
@@ -476,7 +514,7 @@ def main():
     demo_crewai_single_document()
     demo_crewai_agent_capabilities()
     demo_crewai_batch_processing()
-    demo_crewai_ai_vs_traditional()
+    demo_crewai_extraction_methods()
     demo_crewai_error_handling()
     demo_crewai_configuration()
 
@@ -488,6 +526,7 @@ def main():
     print("   ✅ Enhanced observability and logging")
     print("   ✅ Scalable parallel processing")
     print("   ✅ Easy configuration and customization")
+    print("   ✅ Multiple extraction methods (Traditional, AI, OpenAI)")
     print("\nTry the CLI commands or web interface for full CrewAI features!")
 
 
@@ -498,13 +537,6 @@ Demo script for Vietnamese Document Form Filler
 Shows basic usage and capabilities
 """
 
-import asyncio
-import json
-import tempfile
-from pathlib import Path
-
-from batch_processor import BatchProcessor
-from document_processor import DocumentProcessor
 
 # Demo data - sample Vietnamese text
 SAMPLE_VIETNAMESE_TEXT = """
@@ -559,7 +591,7 @@ ___________________________________________
 
 
 async def demo_single_document():
-    """Demonstrate single document processing"""
+    """Demonstrate single document processing."""
     print("🔹 Demo 1: Single Document Processing")
     print("-" * 40)
 
@@ -591,7 +623,7 @@ async def demo_single_document():
 
         # Show a preview of the result
         if Path(output_path).exists():
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 print("\n📋 Preview of filled form:")
                 print(content[:300] + "..." if len(content) > 300 else content)
@@ -608,7 +640,7 @@ async def demo_single_document():
 
 
 async def demo_agent_pipeline():
-    """Demonstrate individual agent usage"""
+    """Demonstrate individual agent usage."""
     print("🔹 Demo 2: Individual Agent Pipeline")
     print("-" * 40)
 
@@ -676,7 +708,7 @@ async def demo_agent_pipeline():
 
 
 async def demo_batch_processing():
-    """Demonstrate batch processing"""
+    """Demonstrate batch processing."""
     print("🔹 Demo 3: Batch Processing")
     print("-" * 40)
 
@@ -727,7 +759,7 @@ async def demo_batch_processing():
     print("\n🔄 Starting batch processing...")
     stats = await batch_processor.process_all(progress_callback)
 
-    print(f"\n📊 Batch Processing Results:")
+    print("\n📊 Batch Processing Results:")
     print(f"Total: {stats['total']}")
     print(f"Completed: {stats['completed']}")
     print(f"Failed: {stats['failed']}")
@@ -744,7 +776,7 @@ async def demo_batch_processing():
 
 
 async def demo_error_handling():
-    """Demonstrate error handling scenarios"""
+    """Demonstrate error handling scenarios."""
     print("🔹 Demo 4: Error Handling")
     print("-" * 40)
 
@@ -781,7 +813,7 @@ async def demo_error_handling():
 
 
 def demo_configuration():
-    """Show configuration options"""
+    """Show configuration options."""
     print("🔹 Demo 5: Configuration Options")
     print("-" * 40)
 
@@ -816,7 +848,7 @@ def demo_configuration():
 
 
 async def main():
-    """Run all demos"""
+    """Run all demos."""
     print("🚀 Vietnamese Document Form Filler - Demo")
     print("=" * 50)
     print("This demo showcases the capabilities of the multi-agent")
@@ -827,17 +859,18 @@ async def main():
     try:
         import aiohttp
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get("http://localhost:11434/api/tags") as response:
-                if response.status == 200:
-                    print("✅ Ollama is running")
-                    data = await response.json()
-                    models = [m["name"] for m in data.get("models", [])]
-                    print(f"Available models: {', '.join(models[:3])}...")
-                else:
-                    print("❌ Ollama is not responding")
-                    print("Please ensure Ollama is installed and running")
-                    return
+        async with aiohttp.ClientSession() as session, session.get(
+            "http://localhost:11434/api/tags"
+        ) as response:
+            if response.status == 200:
+                print("✅ Ollama is running")
+                data = await response.json()
+                models = [m["name"] for m in data.get("models", [])]
+                print(f"Available models: {', '.join(models[:3])}...")
+            else:
+                print("❌ Ollama is not responding")
+                print("Please ensure Ollama is installed and running")
+                return
     except Exception as e:
         print(f"❌ Cannot connect to Ollama: {e}")
         print("This demo requires Ollama to be running")

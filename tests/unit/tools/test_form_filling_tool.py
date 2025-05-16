@@ -6,9 +6,7 @@ Includes tests for AI-based field mapping, fallback mechanisms, and error handli
 """
 
 import json
-import os
-import tempfile
-from unittest.mock import MagicMock, patch, call, ANY
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -70,31 +68,23 @@ def sample_field_mappings():
     """Provide sample field mappings JSON."""
     mappings = {
         "field_mappings": [
-            {
-                "field_text": "Name: ____",
-                "fill_with": "John Smith",
-                "confidence": 0.95
-            },
+            {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.95},
             {
                 "field_text": "Address [enter full address]",
                 "fill_with": "123 Main Street, Apartment 4B",
-                "confidence": 0.9
+                "confidence": 0.9,
             },
-            {
-                "field_text": "Phone number:",
-                "fill_with": "(555) 123-4567",
-                "confidence": 0.9
-            },
+            {"field_text": "Phone number:", "fill_with": "(555) 123-4567", "confidence": 0.9},
             {
                 "field_text": "Date of birth: ____",
                 "fill_with": "January 15, 1980",
-                "confidence": 0.85
+                "confidence": 0.85,
             },
             {
                 "field_text": "Occupation [specify]",
                 "fill_with": "Software Engineer",
-                "confidence": 0.9
-            }
+                "confidence": 0.9,
+            },
         ]
     }
     return json.dumps(mappings)
@@ -106,13 +96,13 @@ def test_init():
         mock_chat_ollama_instance = MagicMock()
         mock_chat_ollama.return_value = mock_chat_ollama_instance
 
-        # Fix the undefined 'model' variable in the FormFillingTool implementation
-        with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-            tool = FormFillingTool()
+        tool = FormFillingTool(model="llama3.2:3b")
 
-            assert tool.name == "form_filler"
-            assert "Fill DOCX form fields with provided content" in tool.description
-            mock_chat_ollama.assert_called_once_with(model="llama3.2:3b", base_url="http://localhost:11434")
+        assert tool.name == "form_filler"
+        assert "Fill DOCX form fields with provided content" in tool.description
+        mock_chat_ollama.assert_called_once_with(
+            model="llama3.2:3b", base_url="http://localhost:11434"
+        )
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
@@ -120,32 +110,38 @@ def test_run_file_not_found(mock_document_class):
     """Test handling of non-existent form files."""
     mock_document_class.side_effect = FileNotFoundError("File not found")
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
+    tool = FormFillingTool(model="llama3.2:3b")
 
-        with pytest.raises(FileNotFoundError):
-            tool._run("/path/to/form.docx", "Translated text", "/path/to/output.docx")
+    with pytest.raises(FileNotFoundError):
+        tool._run("/path/to/form.docx", "Translated text", "/path/to/output.docx")
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
 @patch("form_filler.tools.form_filling_tool.FormAnalysisTool")
 @patch("form_filler.tools.form_filling_tool.ChatOllama")
-def test_run_with_ai_mappings(mock_chat_ollama, mock_form_analyzer, mock_document_class,
-                              mock_docx_document, sample_translated_text, sample_field_mappings):
+def test_run_with_ai_mappings(
+    mock_chat_ollama,
+    mock_form_analyzer,
+    mock_document_class,
+    mock_docx_document,
+    sample_translated_text,
+    sample_field_mappings,
+):
     """Test form filling using AI-generated field mappings."""
     # Setup Document mock
     mock_document_class.return_value = mock_docx_document
 
     # Setup FormAnalysisTool mock
     mock_analyzer_instance = MagicMock()
-    mock_analyzer_instance._run.return_value = json.dumps([
-        {"type": "paragraph", "text": "Name: ____", "placeholder": True},
-        {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
-        {"type": "paragraph", "text": "Phone number:", "placeholder": True},
-        {"type": "table_cell", "text": "Date of birth: ____", "placeholder": True},
-        {"type": "table_cell", "text": "Occupation [specify]", "placeholder": True}
-    ])
+    mock_analyzer_instance._run.return_value = json.dumps(
+        [
+            {"type": "paragraph", "text": "Name: ____", "placeholder": True},
+            {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
+            {"type": "paragraph", "text": "Phone number:", "placeholder": True},
+            {"type": "table_cell", "text": "Date of birth: ____", "placeholder": True},
+            {"type": "table_cell", "text": "Occupation [specify]", "placeholder": True},
+        ]
+    )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
     # Setup ChatOllama mock
@@ -155,61 +151,67 @@ def test_run_with_ai_mappings(mock_chat_ollama, mock_form_analyzer, mock_documen
     mock_chat_ollama_instance.invoke.return_value = mock_response
     mock_chat_ollama.return_value = mock_chat_ollama_instance
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
-        result = tool._run("/path/to/form.docx", sample_translated_text, "/path/to/output.docx")
+    tool = FormFillingTool(model="llama3.2:3b")
+    result = tool._run("/path/to/form.docx", sample_translated_text, "/path/to/output.docx")
 
-        # Verify the result
-        result_dict = json.loads(result)
-        assert result_dict["output_path"] == "/path/to/output.docx"
-        assert result_dict["fields_filled"] > 0
-        assert result_dict["total_mappings"] == 5
+    # Verify the result
+    result_dict = json.loads(result)
+    assert result_dict["output_path"] == "/path/to/output.docx"
+    assert result_dict["fields_filled"] > 0
+    assert result_dict["total_mappings"] == 5
 
-        # Verify that Document was called correctly
-        mock_document_class.assert_called_once_with("/path/to/form.docx")
+    # Verify that Document was called correctly
+    mock_document_class.assert_called_once_with("/path/to/form.docx")
 
-        # Verify that FormAnalysisTool was called correctly
-        mock_analyzer_instance._run.assert_called_once_with("/path/to/form.docx")
+    # Verify that FormAnalysisTool was called correctly
+    mock_analyzer_instance._run.assert_called_once_with("/path/to/form.docx")
 
-        # Verify that ChatOllama was used to generate mappings
-        mock_chat_ollama_instance.invoke.assert_called_once()
+    # Verify that ChatOllama was used to generate mappings
+    mock_chat_ollama_instance.invoke.assert_called_once()
 
-        # Verify that document.save was called with the output path
-        mock_docx_document.save.assert_called_once_with("/path/to/output.docx")
+    # Verify that document.save was called with the output path
+    mock_docx_document.save.assert_called_once_with("/path/to/output.docx")
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
-def test_run_with_provided_mappings(mock_document_class, mock_docx_document,
-                                   sample_translated_text, sample_field_mappings):
+def test_run_with_provided_mappings(
+    mock_document_class, mock_docx_document, sample_translated_text, sample_field_mappings
+):
     """Test form filling with provided field mappings."""
     # Setup Document mock
     mock_document_class.return_value = mock_docx_document
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
-        result = tool._run("/path/to/form.docx", sample_translated_text,
-                          "/path/to/output.docx", sample_field_mappings)
+    tool = FormFillingTool(model="llama3.2:3b")
+    result = tool._run(
+        "/path/to/form.docx",
+        sample_translated_text,
+        "/path/to/output.docx",
+        sample_field_mappings,
+    )
 
-        # Verify the result
-        result_dict = json.loads(result)
-        assert result_dict["output_path"] == "/path/to/output.docx"
-        assert result_dict["fields_filled"] > 0
-        assert result_dict["total_mappings"] == 5
+    # Verify the result
+    result_dict = json.loads(result)
+    assert result_dict["output_path"] == "/path/to/output.docx"
+    assert result_dict["fields_filled"] > 0
+    assert result_dict["total_mappings"] == 5
 
-        # Verify that Document was called correctly
-        mock_document_class.assert_called_once_with("/path/to/form.docx")
+    # Verify that Document was called correctly
+    mock_document_class.assert_called_once_with("/path/to/form.docx")
 
-        # Verify that document.save was called with the output path
-        mock_docx_document.save.assert_called_once_with("/path/to/output.docx")
+    # Verify that document.save was called with the output path
+    mock_docx_document.save.assert_called_once_with("/path/to/output.docx")
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
 @patch("form_filler.tools.form_filling_tool.FormAnalysisTool")
 @patch("form_filler.tools.form_filling_tool.ChatOllama")
-def test_run_with_invalid_mappings_json(mock_chat_ollama, mock_form_analyzer, mock_document_class,
-                                       mock_docx_document, sample_translated_text):
+def test_run_with_invalid_mappings_json(
+    mock_chat_ollama,
+    mock_form_analyzer,
+    mock_document_class,
+    mock_docx_document,
+    sample_translated_text,
+):
     """Test form filling with invalid field mappings JSON."""
     # Setup Document mock
     mock_document_class.return_value = mock_docx_document
@@ -223,48 +225,61 @@ def test_run_with_invalid_mappings_json(mock_chat_ollama, mock_form_analyzer, mo
 
     # Setup FormAnalysisTool mock
     mock_analyzer_instance = MagicMock()
-    mock_analyzer_instance._run.return_value = json.dumps([
-        {"type": "paragraph", "text": "Name: ____", "placeholder": True},
-        {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True}
-    ])
+    mock_analyzer_instance._run.return_value = json.dumps(
+        [
+            {"type": "paragraph", "text": "Name: ____", "placeholder": True},
+            {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
+        ]
+    )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
     # Setup mock for _create_fallback_mappings
     with patch.object(FormFillingTool, "_create_fallback_mappings") as mock_fallback:
         mock_fallback.return_value = [
             {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.5},
-            {"field_text": "Address [enter full address]", "fill_with": "123 Main Street", "confidence": 0.5}
+            {
+                "field_text": "Address [enter full address]",
+                "fill_with": "123 Main Street",
+                "confidence": 0.5,
+            },
         ]
 
-        # Fix the undefined 'model' variable in the FormFillingTool implementation
-        with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-            tool = FormFillingTool()
-            result = tool._run("/path/to/form.docx", sample_translated_text, "/path/to/output.docx")
+        tool = FormFillingTool(model="llama3.2:3b")
+        result = tool._run(
+            "/path/to/form.docx", sample_translated_text, "/path/to/output.docx"
+        )
 
-            # Verify the result indicates successful fallback
-            result_dict = json.loads(result)
-            assert result_dict["output_path"] == "/path/to/output.docx"
-            assert result_dict["fields_filled"] > 0
+        # Verify the result indicates successful fallback
+        result_dict = json.loads(result)
+        assert result_dict["output_path"] == "/path/to/output.docx"
+        assert result_dict["fields_filled"] > 0
 
-            # Verify that _create_fallback_mappings was called
-            mock_fallback.assert_called_once()
+        # Verify that _create_fallback_mappings was called
+        mock_fallback.assert_called_once()
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
 @patch("form_filler.tools.form_filling_tool.FormAnalysisTool")
 @patch("form_filler.tools.form_filling_tool.ChatOllama")
-def test_ai_mapping_error(mock_chat_ollama, mock_form_analyzer, mock_document_class,
-                         mock_docx_document, sample_translated_text):
+def test_ai_mapping_error(
+    mock_chat_ollama,
+    mock_form_analyzer,
+    mock_document_class,
+    mock_docx_document,
+    sample_translated_text,
+):
     """Test handling of AI mapping errors by using fallback."""
     # Setup Document mock
     mock_document_class.return_value = mock_docx_document
 
     # Setup FormAnalysisTool mock
     mock_analyzer_instance = MagicMock()
-    mock_analyzer_instance._run.return_value = json.dumps([
-        {"type": "paragraph", "text": "Name: ____", "placeholder": True},
-        {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True}
-    ])
+    mock_analyzer_instance._run.return_value = json.dumps(
+        [
+            {"type": "paragraph", "text": "Name: ____", "placeholder": True},
+            {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
+        ]
+    )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
     # Setup ChatOllama mock to throw an exception
@@ -274,25 +289,31 @@ def test_ai_mapping_error(mock_chat_ollama, mock_form_analyzer, mock_document_cl
 
     # Setup mock for _create_fallback_json
     with patch.object(FormFillingTool, "_create_fallback_json") as mock_fallback_json:
-        mock_fallback_json.return_value = json.dumps({
-            "field_mappings": [
-                {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.5},
-                {"field_text": "Address [enter full address]", "fill_with": "123 Main Street", "confidence": 0.5}
-            ]
-        })
+        mock_fallback_json.return_value = json.dumps(
+            {
+                "field_mappings": [
+                    {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.5},
+                    {
+                        "field_text": "Address [enter full address]",
+                        "fill_with": "123 Main Street",
+                        "confidence": 0.5,
+                    },
+                ]
+            }
+        )
 
-        # Fix the undefined 'model' variable in the FormFillingTool implementation
-        with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-            tool = FormFillingTool()
-            result = tool._run("/path/to/form.docx", sample_translated_text, "/path/to/output.docx")
+        tool = FormFillingTool(model="llama3.2:3b")
+        result = tool._run(
+            "/path/to/form.docx", sample_translated_text, "/path/to/output.docx"
+        )
 
-            # Verify the result indicates successful fallback
-            result_dict = json.loads(result)
-            assert result_dict["output_path"] == "/path/to/output.docx"
-            assert result_dict["fields_filled"] > 0
+        # Verify the result indicates successful fallback
+        result_dict = json.loads(result)
+        assert result_dict["output_path"] == "/path/to/output.docx"
+        assert result_dict["fields_filled"] > 0
 
-            # Verify that _create_fallback_json was called
-            mock_fallback_json.assert_called_once()
+        # Verify that _create_fallback_json was called
+        mock_fallback_json.assert_called_once()
 
 
 def test_create_fallback_mappings():
@@ -307,41 +328,39 @@ def test_create_fallback_mappings():
 
     sample_content = "John Smith\n123 Main Street"
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
-        mappings = tool._create_fallback_mappings(mock_doc, sample_content)
+    tool = FormFillingTool(model="llama3.2:3b")
+    mappings = tool._create_fallback_mappings(mock_doc, sample_content)
 
-        # Verify the mappings
-        assert len(mappings) == 2
-        assert mappings[0]["field_text"] == "Name: ____"
-        assert mappings[0]["fill_with"] == "John Smith"
-        assert mappings[1]["field_text"] == "Address [enter full address]"
-        assert mappings[1]["fill_with"] == "123 Main Street"
+    # Verify the mappings
+    assert len(mappings) == 2
+    assert mappings[0]["field_text"] == "Name: ____"
+    assert mappings[0]["fill_with"] == "John Smith"
+    assert mappings[1]["field_text"] == "Address [enter full address]"
+    assert mappings[1]["fill_with"] == "123 Main Street"
 
 
 def test_create_fallback_json():
     """Test the _create_fallback_json method."""
-    form_fields = json.dumps([
-        {"type": "paragraph", "text": "Name: ____", "placeholder": True},
-        {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True}
-    ])
+    form_fields = json.dumps(
+        [
+            {"type": "paragraph", "text": "Name: ____", "placeholder": True},
+            {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
+        ]
+    )
 
     sample_content = "John Smith\n123 Main Street"
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
-        result = tool._create_fallback_json(form_fields, sample_content)
+    tool = FormFillingTool(model="llama3.2:3b")
+    result = tool._create_fallback_json(form_fields, sample_content)
 
-        # Verify the result is valid JSON
-        mappings_data = json.loads(result)
+    # Verify the result is valid JSON
+    mappings_data = json.loads(result)
 
-        # Check the structure
-        assert "field_mappings" in mappings_data
-        assert len(mappings_data["field_mappings"]) == 2
-        assert mappings_data["field_mappings"][0]["field_text"] == "Name: ____"
-        assert mappings_data["field_mappings"][0]["fill_with"] == "John Smith"
+    # Check the structure
+    assert "field_mappings" in mappings_data
+    assert len(mappings_data["field_mappings"]) == 2
+    assert mappings_data["field_mappings"][0]["field_text"] == "Name: ____"
+    assert mappings_data["field_mappings"][0]["fill_with"] == "John Smith"
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
@@ -352,14 +371,13 @@ def test_logging_on_error(mock_logger, mock_document_class):
     mock_document_class.side_effect = Exception("Form filling error")
 
     # Create tool and run with error
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
+    tool = FormFillingTool(model="llama3.2:3b")
 
-        with pytest.raises(Exception):
-            tool._run("/path/to/form.docx", "Translated text", "/path/to/output.docx")
+    with pytest.raises(Exception):
+        tool._run("/path/to/form.docx", "Translated text", "/path/to/output.docx")
 
-        # Verify logging was called with the expected message
-        mock_logger.error.assert_called_once_with("Form filling failed: Form filling error")
+    # Verify logging was called with the expected message
+    mock_logger.error.assert_called_once_with("Form filling failed: Form filling error")
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
@@ -383,72 +401,74 @@ def test_complex_paragraph_replacement(mock_chat_ollama, mock_form_analyzer, moc
 
     # Setup FormAnalysisTool mock
     mock_analyzer_instance = MagicMock()
-    mock_analyzer_instance._run.return_value = json.dumps([
-        {"type": "paragraph", "text": "Name: ____ (enter full name)", "placeholder": True}
-    ])
+    mock_analyzer_instance._run.return_value = json.dumps(
+        [{"type": "paragraph", "text": "Name: ____ (enter full name)", "placeholder": True}]
+    )
     mock_form_analyzer.return_value = mock_analyzer_instance
 
     # Setup ChatOllama mock
     mock_chat_ollama_instance = MagicMock()
     mock_response = MagicMock()
-    mock_response.content = json.dumps({
-        "field_mappings": [
-            {
-                "field_text": "Name: ____ (enter full name)",
-                "fill_with": "John Smith",
-                "confidence": 0.95
-            }
-        ]
-    })
+    mock_response.content = json.dumps(
+        {
+            "field_mappings": [
+                {
+                    "field_text": "Name: ____ (enter full name)",
+                    "fill_with": "John Smith",
+                    "confidence": 0.95,
+                }
+            ]
+        }
+    )
     mock_chat_ollama_instance.invoke.return_value = mock_response
     mock_chat_ollama.return_value = mock_chat_ollama_instance
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
-        result = tool._run("/path/to/form.docx", "John Smith", "/path/to/output.docx")
+    tool = FormFillingTool(model="llama3.2:3b")
+    result = tool._run("/path/to/form.docx", "John Smith", "/path/to/output.docx")
 
-        # Verify the result
-        result_dict = json.loads(result)
-        assert result_dict["output_path"] == "/path/to/output.docx"
-        assert result_dict["fields_filled"] > 0
+    # Verify the result
+    result_dict = json.loads(result)
+    assert result_dict["output_path"] == "/path/to/output.docx"
+    assert result_dict["fields_filled"] > 0
 
-        # Verify that paragraph text was correctly replaced
-        paragraph1.clear.assert_called_once()
-        paragraph1.add_run.assert_called_once()
+    # Verify that paragraph text was correctly replaced
+    paragraph1.clear.assert_called_once()
+    paragraph1.add_run.assert_called_once()
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
-@patch("form_filler.tools.form_filling_tool.json.loads")
-def test_invalid_json_mapping_format(mock_json_loads, mock_document_class):
+def test_invalid_json_mapping_format(mock_document_class):
     """Test handling of invalid JSON format in field mappings."""
-    # Setup JSON loads to raise exception
-    mock_json_loads.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
-
     # Setup Document mock
     mock_doc = MagicMock()
     mock_document_class.return_value = mock_doc
 
-    # Fix the undefined 'model' variable and setup fallback method
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        with patch.object(FormFillingTool, "_create_fallback_mappings") as mock_fallback:
-            mock_fallback.return_value = [
-                {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.5}
-            ]
+    # Setup fallback method
+    with patch.object(FormFillingTool, "_create_fallback_mappings") as mock_fallback:
+        mock_fallback.return_value = [
+            {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.5}
+        ]
 
-            tool = FormFillingTool()
+        # Create a local json.loads that will raise an exception only for a specific input
+        original_loads = json.loads
+
+        def patched_loads(s, *args, **kwargs):
+            if s == "Invalid JSON mapping":
+                raise json.JSONDecodeError("Invalid JSON", "", 0)
+            return original_loads(s, *args, **kwargs)
+
+        # Apply the patch to the tool's json module
+        with patch("form_filler.tools.form_filling_tool.json.loads", side_effect=patched_loads):
+            tool = FormFillingTool(model="llama3.2:3b")
             result = tool._run(
-                "/path/to/form.docx",
-                "John Smith",
-                "/path/to/output.docx",
-                "Invalid JSON mapping"
+                "/path/to/form.docx", "John Smith", "/path/to/output.docx", "Invalid JSON mapping"
             )
 
             # Verify fallback method was called
             mock_fallback.assert_called_once()
 
-            # Verify the result indicates successful fallback
-            result_dict = json.loads(result)
+            # Use the original json.loads to verify the result
+            result_dict = original_loads(result)
             assert result_dict["output_path"] == "/path/to/output.docx"
 
 
@@ -461,28 +481,24 @@ def test_empty_form_fields(mock_document_class):
     mock_doc.tables = []
     mock_document_class.return_value = mock_doc
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
+    tool = FormFillingTool(model="llama3.2:3b")
 
-        # Create mappings that won't match anything
-        field_mappings = json.dumps({
-            "field_mappings": [
-                {
-                    "field_text": "Name: ____",
-                    "fill_with": "John Smith",
-                    "confidence": 0.95
-                }
-            ]
-        })
+    # Create mappings that won't match anything
+    field_mappings = json.dumps({
+        "field_mappings": [
+            {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.95}
+        ]
+    })
 
-        result = tool._run("/path/to/form.docx", "John Smith", "/path/to/output.docx", field_mappings)
+    result = tool._run(
+        "/path/to/form.docx", "John Smith", "/path/to/output.docx", field_mappings
+    )
 
-        # Verify the result indicates no fields were filled
-        result_dict = json.loads(result)
-        assert result_dict["output_path"] == "/path/to/output.docx"
-        assert result_dict["fields_filled"] == 0
-        assert result_dict["total_mappings"] == 1
+    # Verify the result indicates no fields were filled
+    result_dict = json.loads(result)
+    assert result_dict["output_path"] == "/path/to/output.docx"
+    assert result_dict["fields_filled"] == 0
+    assert result_dict["total_mappings"] == 1
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
@@ -505,15 +521,13 @@ def test_create_fallback_mappings_insufficient_content(mock_document_class):
     # Content with only one line
     sample_content = "John Smith"
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
-        mappings = tool._create_fallback_mappings(mock_doc, sample_content)
+    tool = FormFillingTool(model="llama3.2:3b")
+    mappings = tool._create_fallback_mappings(mock_doc, sample_content)
 
-        # Verify mappings were created for available content only
-        assert len(mappings) == 1
-        assert mappings[0]["field_text"] == "Name: ____"
-        assert mappings[0]["fill_with"] == "John Smith"
+    # Verify mappings were created for available content only
+    assert len(mappings) == 1
+    assert mappings[0]["field_text"] == "Name: ____"
+    assert mappings[0]["fill_with"] == "John Smith"
 
 
 @patch("form_filler.tools.form_filling_tool.Document")
@@ -523,12 +537,10 @@ def test_create_fallback_json_invalid_json(mock_document_class):
     invalid_form_fields = "{invalid json"
     sample_content = "John Smith\n123 Main Street"
 
-    # Fix the undefined 'model' variable in the FormFillingTool implementation
-    with patch("form_filler.tools.form_filling_tool.model", "llama3.2:3b"):
-        tool = FormFillingTool()
-        result = tool._create_fallback_json(invalid_form_fields, sample_content)
+    tool = FormFillingTool(model="llama3.2:3b")
+    result = tool._create_fallback_json(invalid_form_fields, sample_content)
 
-        # Verify the result is valid JSON with empty mappings
-        mappings_data = json.loads(result)
-        assert "field_mappings" in mappings_data
-        assert len(mappings_data["field_mappings"]) == 0
+    # Verify the result is valid JSON with empty mappings
+    mappings_data = json.loads(result)
+    assert "field_mappings" in mappings_data
+    assert len(mappings_data["field_mappings"]) == 0

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Batch Processing CLI for Vietnamese Document Form Filler
-Implements commands for batch processing multiple documents
+Batch Processing CLI for Vietnamese Document Form Filler.
+
+Implements commands for batch processing multiple documents.
 """
 
 import logging
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 )
 @click.pass_context
 def batch_cli(ctx, verbose, model, crews, extraction_method):
-    """Batch Processing for Vietnamese Document Form Filler (CrewAI Edition)
+    """Batch Processing for Vietnamese Document Form Filler (CrewAI Edition).
 
     Process multiple Vietnamese documents in parallel using CrewAI crews
     """
@@ -49,7 +50,7 @@ def batch_cli(ctx, verbose, model, crews, extraction_method):
 @click.argument("output_dir", type=click.Path(file_okay=False, dir_okay=True))
 @click.pass_context
 def process_directory(ctx, input_dir, form_template, output_dir):
-    """Process all documents in a directory
+    """Process all documents in a directory.
 
     Example:
     form-filler-cli batch process-directory ./input_docs/ ./form_template.docx ./output_docs/
@@ -82,8 +83,7 @@ def process_directory(ctx, input_dir, form_template, output_dir):
 @batch_cli.command()
 @click.pass_context
 def crew_status(ctx):
-    """Show status of processing crews"""
-
+    """Show status of processing crews."""
     # Placeholder for showing status of current processing crews
     click.echo("Crew Status")
     click.echo("=" * 40)

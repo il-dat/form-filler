@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Vietnamese to English Document Form Filler CLI.
+
 A CrewAI-based multi-agent system for processing Vietnamese documents and filling English DOCX forms.
 """
 
@@ -42,7 +43,6 @@ logger = logging.getLogger(__name__)
 class ProcessingResult:
     """Data structure for processing results."""
 
-
     success: bool
     data: Any
     error: str | None = None
@@ -52,7 +52,6 @@ class ProcessingResult:
 # Custom Tools for CrewAI Agents
 class DocumentExtractionTool(BaseTool):
     """Tool for extracting text from documents."""
-
 
     name: str = "document_extractor"
     description: str = "Extract text from PDF or image files using traditional or AI methods"
@@ -68,7 +67,6 @@ class DocumentExtractionTool(BaseTool):
 
     def _run(self, file_path: str) -> str:
         """Extract text from the given file."""
-
         try:
             file_path = Path(file_path)
 
@@ -94,7 +92,6 @@ class DocumentExtractionTool(BaseTool):
 
     def _extract_from_pdf_traditional(self, file_path: Path) -> str:
         """Extract text from PDF using PyMuPDF."""
-
         doc = fitz.open(file_path)
         text = ""
         for page in doc:
@@ -104,7 +101,6 @@ class DocumentExtractionTool(BaseTool):
 
     def _extract_from_pdf_ai(self, file_path: Path) -> str:
         """Extract text from PDF using AI (convert to images and use vision model)."""
-
         try:
             # Convert PDF pages to images and process with AI
             doc = fitz.open(file_path)
@@ -137,13 +133,11 @@ class DocumentExtractionTool(BaseTool):
 
     def _extract_from_image_traditional(self, file_path: Path) -> str:
         """Extract text from image using Tesseract OCR."""
-
         image = Image.open(file_path)
         return pytesseract.image_to_string(image, lang="vie")
 
     def _extract_from_image_ai(self, file_path: Path) -> str:
         """Extract text from image using AI vision model."""
-
         try:
             # Convert image to base64 for AI processing
             import base64
@@ -161,7 +155,6 @@ class DocumentExtractionTool(BaseTool):
             <image>data:image/png;base64,{base64_image}</image>
 
             Extracted text:"""
-
 
             # For now, simulate AI extraction (in real implementation, use vision model)
             # This is a placeholder - you would implement actual vision model here
@@ -181,7 +174,6 @@ class DocumentExtractionTool(BaseTool):
 class TranslationTool(BaseTool):
     """Tool for translating Vietnamese text to English."""
 
-
     name: str = "vietnamese_translator"
     description: str = "Translate Vietnamese text to English using Ollama LLM"
 
@@ -192,7 +184,6 @@ class TranslationTool(BaseTool):
 
     def _run(self, vietnamese_text: str) -> str:
         """Translate Vietnamese text to English."""
-
         if not vietnamese_text.strip():
             raise Exception("Empty text provided for translation")
 
@@ -201,7 +192,6 @@ class TranslationTool(BaseTool):
         Focus on formal document language appropriate for forms and official papers.
 
         Return only the English translation without any additional commentary."""
-
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -222,13 +212,11 @@ class TranslationTool(BaseTool):
 class FormAnalysisTool(BaseTool):
     """Tool for analyzing DOCX form structure."""
 
-
     name: str = "form_analyzer"
     description: str = "Analyze DOCX form structure and identify fillable fields"
 
     def _run(self, form_path: str) -> str:
         """Analyze the form structure and return field information."""
-
         try:
             doc = Document(form_path)
             form_fields = []
@@ -259,7 +247,6 @@ class FormAnalysisTool(BaseTool):
 class FormFillingTool(BaseTool):
     """Tool for filling DOCX forms with translated content."""
 
-
     name: str = "form_filler"
     description: str = "Fill DOCX form fields with provided content"
 
@@ -272,7 +259,6 @@ class FormFillingTool(BaseTool):
         self, form_path: str, translated_text: str, output_path: str, field_mappings: str = None
     ) -> str:
         """Fill the form with mapped content."""
-
         try:
             doc = Document(form_path)
 
@@ -334,7 +320,6 @@ class FormFillingTool(BaseTool):
 
     def _generate_field_mappings(self, form_path: str, content: str) -> str:
         """Generate field mappings using AI."""
-
         # Analyze form structure
         form_analyzer = FormAnalysisTool()
         form_fields = form_analyzer._run(form_path)
@@ -342,7 +327,6 @@ class FormFillingTool(BaseTool):
         system_prompt = """You are an expert at analyzing documents and mapping content to form fields.
         Given a form structure and translated content, determine how to fill each field appropriately.
         Return ONLY valid JSON in the specified format."""
-
 
         prompt = f"""Form fields found:
 {form_fields}
@@ -362,7 +346,6 @@ Consider the context and purpose of each field. Return only valid JSON in this f
     ]
 }}"""
 
-
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
@@ -377,7 +360,6 @@ Consider the context and purpose of each field. Return only valid JSON in this f
 
     def _create_fallback_mappings(self, doc: Document, content: str) -> list[dict]:
         """Create simple fallback mappings when AI fails."""
-
         paragraphs_with_placeholders = []
         for paragraph in doc.paragraphs:
             text = paragraph.text.strip()
@@ -402,7 +384,6 @@ Consider the context and purpose of each field. Return only valid JSON in this f
 
     def _create_fallback_json(self, form_fields: str, content: str) -> str:
         """Create fallback JSON when AI mapping fails."""
-
         try:
             fields = json.loads(form_fields)
             content_parts = content.split("\n")
@@ -419,7 +400,7 @@ Consider the context and purpose of each field. Return only valid JSON in this f
                     )
 
             return json.dumps({"field_mappings": mappings})
-        except:
+        except Exception:
             return json.dumps({"field_mappings": []})
 
 
@@ -428,14 +409,12 @@ def create_document_collector_agent(
     extraction_method: str = "traditional", vision_model: str = "llava:7b"
 ) -> Agent:
     """Create the document collection agent."""
-
     return Agent(
         role="Document Text Extractor",
         goal="Extract text content from Vietnamese documents (PDFs and images) with high accuracy",
         backstory="""You are a specialized document processing expert with advanced capabilities in text extraction.
         You can handle both traditional OCR methods and cutting-edge AI vision models to extract text from various document formats.
         Your expertise includes processing Vietnamese documents with proper diacritics and special characters.""",
-
         tools=[
             DocumentExtractionTool(extraction_method=extraction_method, vision_model=vision_model)
         ],
@@ -446,14 +425,12 @@ def create_document_collector_agent(
 
 def create_translator_agent(model: str = "llama3.2:3b") -> Agent:
     """Create the translation agent."""
-
     return Agent(
         role="Vietnamese to English Translator",
         goal="Provide accurate and contextually appropriate translations from Vietnamese to English",
         backstory="""You are a professional translator with deep expertise in Vietnamese and English languages.
         You specialize in translating official documents, forms, and business communications while preserving
         the original meaning and maintaining formal language appropriate for document processing.""",
-
         tools=[TranslationTool(model=model)],
         verbose=True,
         allow_delegation=False,
@@ -462,14 +439,12 @@ def create_translator_agent(model: str = "llama3.2:3b") -> Agent:
 
 def create_form_analyst_agent() -> Agent:
     """Create the form analysis agent."""
-
     return Agent(
         role="Document Form Analyst",
         goal="Analyze DOCX forms and identify all fillable fields and their purposes",
         backstory="""You are an expert in document analysis and form processing. You can quickly identify
         form fields, understand their context and purpose, and determine the most appropriate content
         to fill each field based on available translated information.""",
-
         tools=[FormAnalysisTool()],
         verbose=True,
         allow_delegation=False,
@@ -478,14 +453,12 @@ def create_form_analyst_agent() -> Agent:
 
 def create_form_filler_agent(model: str = "llama3.2:3b") -> Agent:
     """Create the form filling agent."""
-
     return Agent(
         role="Form Completion Specialist",
         goal="Fill DOCX forms with translated content using intelligent field mapping",
         backstory="""You are a form completion specialist with the ability to understand document context
         and intelligently map translated content to appropriate form fields. You ensure accuracy and
         maintain proper formatting while filling forms.""",
-
         tools=[FormFillingTool(model=model)],
         verbose=True,
         allow_delegation=False,
@@ -495,8 +468,7 @@ def create_form_filler_agent(model: str = "llama3.2:3b") -> Agent:
 class DocumentProcessingCrew:
     """Main CrewAI crew for document processing."""
 
-
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         text_model: str = "llama3.2:3b",
         extraction_method: str = "traditional",
@@ -517,7 +489,6 @@ class DocumentProcessingCrew:
         self, source_path: str, form_path: str, output_path: str
     ) -> ProcessingResult:
         """Process a document through the CrewAI pipeline."""
-
         try:
             # Define tasks
             extraction_task = Task(
@@ -530,7 +501,6 @@ class DocumentProcessingCrew:
                 - Use {'AI vision models' if self.extraction_method == 'ai' else 'traditional OCR methods'}
 
                 Return the complete extracted text.""",
-
                 agent=self.document_collector,
                 expected_output="Complete text content extracted from the Vietnamese document",
             )
@@ -545,7 +515,6 @@ class DocumentProcessingCrew:
                 - Keep formatting structure where relevant
 
                 Return the complete English translation.""",
-
                 agent=self.translator,
                 expected_output="Professional English translation of the Vietnamese text",
                 context=[extraction_task],
@@ -560,7 +529,6 @@ class DocumentProcessingCrew:
                 - Provide detailed information about form structure
 
                 Return structured information about the form fields.""",
-
                 agent=self.form_analyst,
                 expected_output="Detailed analysis of form structure and fillable fields",
             )
@@ -575,7 +543,6 @@ class DocumentProcessingCrew:
                 - Fill all relevant fields with appropriate content
 
                 Return information about the filling process including number of fields filled.""",
-
                 agent=self.form_filler,
                 expected_output="Successfully filled form with detailed completion report",
                 context=[translation_task, form_analysis_task],
@@ -614,9 +581,9 @@ class DocumentProcessingCrew:
                     metadata={
                         "extraction_method": self.extraction_method,
                         "text_model": self.text_model,
-                        "vision_model": self.vision_model
-                        if self.extraction_method == "ai"
-                        else None,
+                        "vision_model": (
+                            self.vision_model if self.extraction_method == "ai" else None
+                        ),
                     },
                 )
             except json.JSONDecodeError:
@@ -627,9 +594,9 @@ class DocumentProcessingCrew:
                     metadata={
                         "extraction_method": self.extraction_method,
                         "text_model": self.text_model,
-                        "vision_model": self.vision_model
-                        if self.extraction_method == "ai"
-                        else None,
+                        "vision_model": (
+                            self.vision_model if self.extraction_method == "ai" else None
+                        ),
                     },
                 )
 
@@ -663,7 +630,6 @@ def cli(ctx, verbose, model, extraction_method, vision_model):
     - traditional: Use PyMuPDF for PDFs and Tesseract for images
     - ai: Use vision models for both PDFs and images (requires vision-capable models)
     """
-
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     ctx.obj["model"] = model
@@ -697,7 +663,6 @@ def process(ctx, source, form, output, model, extraction_method, vision_model):
     Example with AI extraction:
     python document_processor.py -e ai -vm llava:7b process document.pdf form.docx output.docx
     """
-
     model = model or ctx.obj["model"]
     extraction_method = extraction_method or ctx.obj["extraction_method"]
     vision_model = vision_model or ctx.obj["vision_model"]
@@ -748,7 +713,6 @@ def extract(ctx, file_path, extraction_method, vision_model):
     Example with AI extraction:
     python document_processor.py -e ai extract document.pdf
     """
-
     extraction_method = extraction_method or ctx.obj["extraction_method"]
     vision_model = vision_model or ctx.obj["vision_model"]
 
@@ -780,7 +744,6 @@ def extract(ctx, file_path, extraction_method, vision_model):
 @click.pass_context
 def translate(ctx, vietnamese_text, model):
     """Translate Vietnamese text to English (for testing)."""
-
     model = model or ctx.obj["model"]
 
     translator = TranslationTool(model=model)
@@ -804,61 +767,57 @@ def translate(ctx, vietnamese_text, model):
 @click.option("--check-vision", is_flag=True, help="Also check for vision models")
 async def check_ollama(host, port, check_vision):
     """Check if Ollama is running and list available models."""
-
     url = f"http://{host}:{port}/api/tags"
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    models = data.get("models", [])
+        async with aiohttp.ClientSession() as session, session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                models = data.get("models", [])
 
-                    click.echo("✅ Ollama is running!")
-                    click.echo("\nAvailable models:")
+                click.echo("✅ Ollama is running!")
+                click.echo("\nAvailable models:")
 
-                    text_models = []
-                    vision_models = []
+                text_models = []
+                vision_models = []
 
-                    for model in models:
-                        name = model.get("name", "Unknown")
-                        size = model.get("size", 0)
-                        size_mb = size / (1024 * 1024) if size else 0
+                for model in models:
+                    name = model.get("name", "Unknown")
+                    size = model.get("size", 0)
+                    size_mb = size / (1024 * 1024) if size else 0
 
-                        # Classify models
-                        if (
-                            "llava" in name.lower()
-                            or "vision" in name.lower()
-                            or "bakllava" in name.lower()
-                        ):
-                            vision_models.append(f"  - {name} ({size_mb:.1f} MB)")
-                        else:
-                            text_models.append(f"  - {name} ({size_mb:.1f} MB)")
+                    # Classify models
+                    if (
+                        "llava" in name.lower()
+                        or "vision" in name.lower()
+                        or "bakllava" in name.lower()
+                    ):
+                        vision_models.append(f"  - {name} ({size_mb:.1f} MB)")
+                    else:
+                        text_models.append(f"  - {name} ({size_mb:.1f} MB)")
 
-                    click.echo("\n📝 Text Models (for translation and form filling):")
-                    for model in text_models:
-                        click.echo(model)
+                click.echo("\n📝 Text Models (for translation and form filling):")
+                for model in text_models:
+                    click.echo(model)
 
-                    if check_vision:
-                        click.echo("\n👁️ Vision Models (for AI text extraction):")
-                        if vision_models:
-                            for model in vision_models:
-                                click.echo(model)
-                        else:
-                            click.echo(
-                                "  No vision models found. Install with: ollama pull llava:7b"
-                            )
-                            click.echo(
-                                "  Vision models enable AI-powered text extraction from images and PDFs"
-                            )
-                            click.echo("  Supported models: llava:7b, llava:13b, bakllava")
+                if check_vision:
+                    click.echo("\n👁️ Vision Models (for AI text extraction):")
+                    if vision_models:
+                        for model in vision_models:
+                            click.echo(model)
+                    else:
+                        click.echo("  No vision models found. Install with: ollama pull llava:7b")
+                        click.echo(
+                            "  Vision models enable AI-powered text extraction from images and PDFs"
+                        )
+                        click.echo("  Supported models: llava:7b, llava:13b, bakllava")
 
-                    click.echo("\n🤖 CrewAI Integration Status: ✅ Ready")
-                    click.echo("Available extraction methods: traditional, ai")
+                click.echo("\n🤖 CrewAI Integration Status: ✅ Ready")
+                click.echo("Available extraction methods: traditional, ai")
 
-                else:
-                    click.echo(f"❌ Ollama responded with status: {response.status}")
-                    sys.exit(1)
+            else:
+                click.echo(f"❌ Ollama responded with status: {response.status}")
+                sys.exit(1)
     except Exception as e:
         click.echo(f"❌ Error connecting to Ollama: {e}")
         click.echo(f"Make sure Ollama is running on {host}:{port}")

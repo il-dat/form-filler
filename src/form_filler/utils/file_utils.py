@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-File utilities for Vietnamese Document Form Filler
+File utilities for Vietnamese Document Form Filler.
+
 Handles file operations and validations.
 """
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Utils package for Vietnamese Document Form Filler
+Utils package for Vietnamese Document Form Filler.
+
 Contains utility functions for the application.
 """
 

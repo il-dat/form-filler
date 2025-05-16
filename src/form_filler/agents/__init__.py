@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
+Agents package for Vietnamese Document Form Filler.
 
-Agents package for Vietnamese Document Form Filler
 Contains agent creation functions for various CrewAI agents.
 """
 

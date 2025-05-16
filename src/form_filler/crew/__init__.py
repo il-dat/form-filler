@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
+Crew package for Vietnamese Document Form Filler.
 
-Crew package for Vietnamese Document Form Filler
 Contains CrewAI crew implementations for document processing.
 """
 

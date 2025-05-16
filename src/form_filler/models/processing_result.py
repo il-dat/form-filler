@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Models for Vietnamese Document Form Filler
+Models for Vietnamese Document Form Filler.
+
 Contains data classes for processing results.
 """
 

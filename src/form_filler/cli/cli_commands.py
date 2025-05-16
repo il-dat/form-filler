@@ -21,11 +21,13 @@ logger = logging.getLogger(__name__)
 
 
 def show_version(ctx, param, value):
+    """Show current version of the package."""
     if not value or ctx.resilient_parsing:
         return
     try:
         # Import version information inside the function to avoid circular imports
-        from form_filler import __version__, __author__, __email__
+        from form_filler import __author__, __email__, __version__
+
         click.echo(f"Form-Filler version: {__version__}")
         click.echo(f"Author: {__author__}")
         click.echo(f"Email: {__email__}")
@@ -34,9 +36,11 @@ def show_version(ctx, param, value):
 
     # Display Python version and system info
     import platform
+
     click.echo(f"Python version: {sys.version.split()[0]}")
     click.echo(f"System: {platform.system()} {platform.release()}")
     ctx.exit()
+
 
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
@@ -46,15 +50,29 @@ def show_version(ctx, param, value):
 @click.option(
     "--extraction-method",
     "-e",
-    type=click.Choice(["traditional", "ai"]),
+    type=click.Choice(["traditional", "ai", "openai"]),
     default="traditional",
-    help="Text extraction method: traditional (PyMuPDF/Tesseract) or ai (vision models)",
+    help="Text extraction method: traditional (PyMuPDF/Tesseract), ai (local vision models), or openai (OpenAI API)",
 )
 @click.option("--vision-model", "-vm", default="llava:7b", help="Vision model for AI extraction")
-@click.option('--version', is_flag=True, callback=show_version, expose_value=False,
-              is_eager=True, help='Show the version and exit.')
+@click.option(
+    "--openai-api-key", envvar="OPENAI_API_KEY", help="OpenAI API key for OpenAI extraction method"
+)
+@click.option(
+    "--openai-model",
+    default="gpt-4-vision-preview",
+    help="OpenAI model for OpenAI extraction method",
+)
+@click.option(
+    "--version",
+    is_flag=True,
+    callback=show_version,
+    expose_value=False,
+    is_eager=True,
+    help="Show the version and exit.",
+)
 @click.pass_context
-def cli(ctx, verbose, model, extraction_method, vision_model):
+def cli(ctx, verbose, model, extraction_method, vision_model, openai_api_key, openai_model):
     """Vietnamese to English Document Form Filler (CrewAI Edition).
 
     A CrewAI-based multi-agent system for processing Vietnamese documents (PDF/images)
@@ -62,13 +80,16 @@ def cli(ctx, verbose, model, extraction_method, vision_model):
 
     Extraction Methods:
     - traditional: Use PyMuPDF for PDFs and Tesseract for images
-    - ai: Use vision models for both PDFs and images (requires vision-capable models)
+    - ai: Use local vision models for both PDFs and images (requires vision-capable models)
+    - openai: Use OpenAI Vision API for both PDFs and images (requires API key)
     """
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     ctx.obj["model"] = model
     ctx.obj["extraction_method"] = extraction_method
     ctx.obj["vision_model"] = vision_model
+    ctx.obj["openai_api_key"] = openai_api_key
+    ctx.obj["openai_model"] = openai_model
 
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -82,24 +103,34 @@ def cli(ctx, verbose, model, extraction_method, vision_model):
 @click.option(
     "--extraction-method",
     "-e",
-    type=click.Choice(["traditional", "ai"]),
+    type=click.Choice(["traditional", "ai", "openai"]),
     help="Override default extraction method",
 )
 @click.option("--vision-model", "-vm", help="Override default vision model")
+@click.option("--openai-api-key", help="OpenAI API key for OpenAI extraction method")
+@click.option("--openai-model", help="OpenAI model for OpenAI extraction method")
 @click.pass_context
-def process(ctx, source, form, output, model, extraction_method, vision_model):
+def process(
+    ctx, source, form, output, model, extraction_method, vision_model, openai_api_key, openai_model
+):
     """Process a Vietnamese document and fill an English DOCX form using CrewAI.
 
     SOURCE: Path to Vietnamese document (PDF or image)
     FORM: Path to English DOCX form template
     OUTPUT: Path where filled form will be saved
 
-    Example with AI extraction:
+    Examples:
+    # Using local AI extraction with Ollama:
     python document_processor.py -e ai -vm llava:7b process document.pdf form.docx output.docx
+
+    # Using OpenAI API:
+    python document_processor.py -e openai --openai-api-key YOUR_API_KEY process document.pdf form.docx output.docx
     """
     model = model or ctx.obj["model"]
     extraction_method = extraction_method or ctx.obj["extraction_method"]
     vision_model = vision_model or ctx.obj["vision_model"]
+    openai_api_key = openai_api_key or ctx.obj["openai_api_key"]
+    openai_model = openai_model or ctx.obj["openai_model"]
 
     # Ensure output directory exists
     output_path = Path(output)
@@ -107,7 +138,11 @@ def process(ctx, source, form, output, model, extraction_method, vision_model):
 
     # Create CrewAI processor
     crew_processor = DocumentProcessingCrew(
-        text_model=model, extraction_method=extraction_method, vision_model=vision_model
+        text_model=model,
+        extraction_method=extraction_method,
+        vision_model=vision_model,
+        openai_api_key=openai_api_key,
+        openai_model=openai_model,
     )
 
     # Process the document
@@ -123,6 +158,8 @@ def process(ctx, source, form, output, model, extraction_method, vision_model):
             click.echo(f"Text model: {result.metadata.get('text_model', 'N/A')}")
             if result.metadata.get("vision_model"):
                 click.echo(f"Vision model: {result.metadata.get('vision_model')}")
+            if result.metadata.get("openai_model") and extraction_method == "openai":
+                click.echo(f"OpenAI model: {result.metadata.get('openai_model')}")
         if result.data and isinstance(result.data, dict):
             fields_filled = result.data.get("fields_filled", "N/A")
             click.echo(f"Fields filled: {fields_filled}")
@@ -136,23 +173,36 @@ def process(ctx, source, form, output, model, extraction_method, vision_model):
 @click.option(
     "--extraction-method",
     "-e",
-    type=click.Choice(["traditional", "ai"]),
+    type=click.Choice(["traditional", "ai", "openai"]),
     help="Override default extraction method",
 )
 @click.option("--vision-model", "-vm", help="Vision model for AI extraction")
+@click.option("--openai-api-key", help="OpenAI API key for OpenAI extraction method")
+@click.option("--openai-model", help="OpenAI model for OpenAI extraction method")
 @click.pass_context
-def extract(ctx, file_path, extraction_method, vision_model):
+def extract(ctx, file_path, extraction_method, vision_model, openai_api_key, openai_model):
     """Extract text from a Vietnamese document (for testing).
 
-    Example with AI extraction:
-    python document_processor.py -e ai extract document.pdf
+    Examples:
+    # Using local AI extraction with Ollama:
+    python document_processor.py -e ai -vm llava:7b extract document.pdf
+
+    # Using OpenAI API:
+    python document_processor.py -e openai --openai-api-key YOUR_API_KEY extract document.pdf
     """
     extraction_method = extraction_method or ctx.obj["extraction_method"]
     vision_model = vision_model or ctx.obj["vision_model"]
 
+    # Create extraction tool with the appropriate parameters
+    openai_api_key = openai_api_key or ctx.obj["openai_api_key"]
+    openai_model = openai_model or ctx.obj["openai_model"]
+
     # Create extraction tool
     extractor = DocumentExtractionTool(
-        extraction_method=extraction_method, vision_model=vision_model
+        extraction_method=extraction_method,
+        vision_model=vision_model,
+        openai_api_key=openai_api_key,
+        openai_model=openai_model,
     )
 
     try:
@@ -236,16 +286,16 @@ async def check_ollama(host: str, port: int, check_vision: bool) -> None:
                         for model in vision_models:
                             click.echo(model)
                     else:
-                        click.echo(
-                            "  No vision models found. Install with: ollama pull llava:7b"
-                        )
+                        click.echo("  No vision models found. Install with: ollama pull llava:7b")
                         click.echo(
                             "  Vision models enable AI-powered text extraction from images and PDFs"
                         )
                         click.echo("  Supported models: llava:7b, llava:13b, bakllava")
 
                 click.echo("\n🤖 CrewAI Integration Status: ✅ Ready")
-                click.echo("Available extraction methods: traditional, ai")
+                click.echo("Available extraction methods: traditional, ai, openai")
+                click.echo("\n💡 Note: OpenAI extraction requires an API key.")
+                click.echo("Set it with --openai-api-key or OPENAI_API_KEY environment variable.")
             else:
                 click.echo(f"❌ Ollama responded with status: {response.status}")
                 sys.exit(1)

@@ -5,8 +5,7 @@ Tests the functionality of the TranslationTool for translating text from Vietnam
 Includes tests for various response formats, error handling, and edge cases.
 """
 
-import logging
-from unittest.mock import MagicMock, patch, call, ANY
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -33,24 +32,28 @@ def test_init():
 
         tool = TranslationTool(model="llama3.2:3b")
 
-        assert tool.name == "translator"
+        assert tool.name == "vietnamese_translator"
         assert "Translate Vietnamese text to English" in tool.description
-        mock_chat_ollama.assert_called_once_with(model="llama3.2:3b", base_url="http://localhost:11434")
+        mock_chat_ollama.assert_called_once_with(
+            model="llama3.2:3b", base_url="http://localhost:11434"
+        )
 
 
 def test_run_empty_text():
     """Test handling of empty text input."""
     tool = TranslationTool(model="llama3.2:3b")
 
-    with pytest.raises(Exception, match="Cannot translate empty text"):
+    with pytest.raises(Exception, match="Empty text provided for translation"):
         tool._run("")
 
-    with pytest.raises(Exception, match="Cannot translate empty text"):
+    with pytest.raises(Exception, match="Empty text provided for translation"):
         tool._run(None)
 
 
 @patch("form_filler.tools.translation_tool.ChatOllama")
-def test_run_successful_translation(mock_chat_ollama, sample_vietnamese_text, sample_english_translation):
+def test_run_successful_translation(
+    mock_chat_ollama, sample_vietnamese_text, sample_english_translation
+):
     """Test successful translation from Vietnamese to English."""
     # Create mock ChatOllama instance
     mock_chat_ollama_instance = MagicMock()
@@ -73,13 +76,15 @@ def test_run_successful_translation(mock_chat_ollama, sample_vietnamese_text, sa
     call_args = mock_chat_ollama_instance.invoke.call_args[0][0]
     assert len(call_args) == 2
     assert call_args[0]["role"] == "system"
-    assert "professional Vietnamese to English translator" in call_args[0]["content"]
+    assert "professional translator specializing in Vietnamese to English translation" in call_args[0]["content"]
     assert call_args[1]["role"] == "user"
     assert sample_vietnamese_text in call_args[1]["content"]
 
 
 @patch("form_filler.tools.translation_tool.ChatOllama")
-def test_run_older_llm_response_format(mock_chat_ollama, sample_vietnamese_text, sample_english_translation):
+def test_run_older_llm_response_format(
+    mock_chat_ollama, sample_vietnamese_text, sample_english_translation
+):
     """Test handling of older LLM response format without content attribute."""
     # Create mock ChatOllama instance
     mock_chat_ollama_instance = MagicMock()
@@ -198,12 +203,12 @@ def test_long_text_handling(mock_chat_ollama):
 def test_special_characters(mock_chat_ollama):
     """Test handling of text with special characters and Vietnamese diacritics."""
     # Vietnamese text with diacritics and special characters
-    special_text = "Việt Nam là một quốc gia ở Đông Nam Á. Thủ đô là Hà Nội! @ # $ % ^ & * ( ) _ + { } | : \" < > ?"
+    special_text = 'Việt Nam là một quốc gia ở Đông Nam Á. Thủ đô là Hà Nội! @ # $ % ^ & * ( ) _ + { } | : " < > ?'
 
     # Create mock ChatOllama with response
     mock_chat_ollama_instance = MagicMock()
     mock_response = MagicMock()
-    mock_response.content = "Vietnam is a country in Southeast Asia. The capital is Hanoi! @ # $ % ^ & * ( ) _ + { } | : \" < > ?"
+    mock_response.content = 'Vietnam is a country in Southeast Asia. The capital is Hanoi! @ # $ % ^ & * ( ) _ + { } | : " < > ?'
     mock_chat_ollama_instance.invoke.return_value = mock_response
     mock_chat_ollama.return_value = mock_chat_ollama_instance
 

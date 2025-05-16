@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
+Batch Processing module for Vietnamese Document Form Filler.
 
-Batch Processing module for Vietnamese Document Form Filler
 Handles parallel processing of multiple documents.
 """
 

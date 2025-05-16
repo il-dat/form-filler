@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-CrewAI Batch processor for multiple Vietnamese documents
-Processes all documents in a directory and fills forms using CrewAI agents
+CrewAI Batch processor for multiple Vietnamese documents.
+
+Processes all documents in a directory and fills forms using CrewAI agents.
 """
 
 import asyncio
@@ -22,7 +23,6 @@ from form_filler.crew import DocumentProcessingCrew
 class BatchJob:
     """Represents a single batch processing job."""
 
-
     source_path: Path
     form_path: Path
     output_path: Path
@@ -36,8 +36,7 @@ class BatchJob:
 class CrewAIBatchProcessor:
     """Handles batch processing of multiple documents using CrewAI."""
 
-
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         text_model: str = "llama3.2:3b",
         extraction_method: str = "traditional",
@@ -57,7 +56,6 @@ class CrewAIBatchProcessor:
 
     def add_job(self, source_path: str, form_path: str, output_path: str):
         """Add a job to the batch."""
-
         job = BatchJob(
             source_path=Path(source_path),
             form_path=Path(form_path),
@@ -71,7 +69,6 @@ class CrewAIBatchProcessor:
         self, source_dir: str, form_template: str, output_dir: str, pattern: str = "**/*.pdf"
     ) -> int:
         """Automatically discover documents to process."""
-
         source_path = Path(source_dir)
         output_path = Path(output_dir)
         form_path = Path(form_template)
@@ -93,7 +90,6 @@ class CrewAIBatchProcessor:
 
     def process_single_job(self, job: BatchJob) -> BatchJob:
         """Process a single job using CrewAI."""
-
         job.status = "processing"
         job.start_time = time.time()
 
@@ -134,7 +130,6 @@ class CrewAIBatchProcessor:
 
     def process_all(self, progress_callback=None) -> dict:
         """Process all jobs in the batch using ThreadPoolExecutor."""
-
         if not self.jobs:
             return {"total": 0, "completed": 0, "failed": 0}
 
@@ -179,7 +174,6 @@ class CrewAIBatchProcessor:
 
     def generate_statistics(self, total_time: float) -> dict:
         """Generate processing statistics."""
-
         total = len(self.jobs)
         completed = sum(1 for job in self.jobs if job.status == "completed")
         failed = sum(1 for job in self.jobs if job.status == "failed")
@@ -206,7 +200,6 @@ class CrewAIBatchProcessor:
 
     def save_report(self, output_path: str, stats: dict):
         """Save detailed processing report."""
-
         report = {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "configuration": {
@@ -255,7 +248,6 @@ class CrewAIBatchProcessor:
 @click.pass_context
 def batch_cli(ctx, text_model, extraction_method, vision_model, max_concurrent, timeout):
     """CrewAI batch processing commands for Vietnamese document form filling."""
-
     ctx.ensure_object(dict)
     ctx.obj["text_model"] = text_model
     ctx.obj["extraction_method"] = extraction_method
@@ -272,7 +264,7 @@ def batch_cli(ctx, text_model, extraction_method, vision_model, max_concurrent, 
 @click.option("--report", "-r", type=click.Path(), help="Save processing report")
 @click.pass_context
 def process_directory(ctx, source_dir, form_template, output_dir, pattern, report):
-    """Process all documents in a directory using CrewAI
+    """Process all documents in a directory using CrewAI.
 
     SOURCE_DIR: Directory containing Vietnamese documents
     FORM_TEMPLATE: DOCX form template to fill
@@ -281,7 +273,6 @@ def process_directory(ctx, source_dir, form_template, output_dir, pattern, repor
     Example with AI extraction and multiple crews:
     python crew_batch_processor.py -e ai -vm llava:7b -c 5 process-directory input/ form.docx output/
     """
-
     processor = CrewAIBatchProcessor(
         text_model=ctx.obj["text_model"],
         extraction_method=ctx.obj["extraction_method"],
@@ -351,11 +342,10 @@ def process_directory(ctx, source_dir, form_template, output_dir, pattern, repor
 @click.option("--report", "-r", type=click.Path(), help="Save processing report")
 @click.pass_context
 def process_from_file(ctx, jobs_file, report):
-    """Process jobs defined in a JSON file using CrewAI
+    """Process jobs defined in a JSON file using CrewAI.
 
     JOBS_FILE: JSON file containing job definitions
     """
-
     processor = CrewAIBatchProcessor(
         text_model=ctx.obj["text_model"],
         extraction_method=ctx.obj["extraction_method"],
@@ -404,11 +394,10 @@ def process_from_file(ctx, jobs_file, report):
 @click.option("--output-dir", required=True, help="Output directory")
 @click.option("--pattern", default="**/*.pdf", help="File pattern")
 def generate_jobs_file(output_file, source_dir, form, output_dir, pattern):
-    """Generate a jobs file for CrewAI batch processing
+    """Generate a jobs file for CrewAI batch processing.
 
     OUTPUT_FILE: Path to save the jobs JSON file
     """
-
     source_path = Path(source_dir)
     output_path = Path(output_dir)
 
@@ -463,44 +452,43 @@ def crew_status():
 
     async def check_ollama():
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get("http://localhost:11434/api/tags") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        models = data.get("models", [])
+            async with aiohttp.ClientSession() as session, session.get(
+                "http://localhost:11434/api/tags"
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    models = data.get("models", [])
 
-                        text_models = [
-                            m
-                            for m in models
-                            if not any(
-                                v in m["name"].lower() for v in ["llava", "vision", "bakllava"]
-                            )
-                        ]
-                        vision_models = [
-                            m
-                            for m in models
-                            if any(v in m["name"].lower() for v in ["llava", "vision", "bakllava"])
-                        ]
+                    text_models = [
+                        m
+                        for m in models
+                        if not any(v in m["name"].lower() for v in ["llava", "vision", "bakllava"])
+                    ]
+                    vision_models = [
+                        m
+                        for m in models
+                        if any(v in m["name"].lower() for v in ["llava", "vision", "bakllava"])
+                    ]
 
-                        click.echo(f"✅ Ollama running with {len(models)} models")
+                    click.echo(f"✅ Ollama running with {len(models)} models")
+                    click.echo(
+                        f"  - Text models: {len(text_models)} (for translation/form filling)"
+                    )
+                    click.echo(f"  - Vision models: {len(vision_models)} (for AI extraction)")
+
+                    if len(text_models) == 0:
                         click.echo(
-                            f"  - Text models: {len(text_models)} (for translation/form filling)"
+                            "⚠️  No text models found. Install with: ollama pull llama3.2:3b"
                         )
-                        click.echo(f"  - Vision models: {len(vision_models)} (for AI extraction)")
+                    if len(vision_models) == 0:
+                        click.echo(
+                            "⚠️  No vision models found. Install with: ollama pull llava:7b"
+                        )
 
-                        if len(text_models) == 0:
-                            click.echo(
-                                "⚠️  No text models found. Install with: ollama pull llama3.2:3b"
-                            )
-                        if len(vision_models) == 0:
-                            click.echo(
-                                "⚠️  No vision models found. Install with: ollama pull llava:7b"
-                            )
-
-                        return True
-                    else:
-                        click.echo(f"❌ Ollama returned status: {response.status}")
-                        return False
+                    return True
+                else:
+                    click.echo(f"❌ Ollama returned status: {response.status}")
+                    return False
         except Exception as e:
             click.echo(f"❌ Cannot connect to Ollama: {e}")
             return False

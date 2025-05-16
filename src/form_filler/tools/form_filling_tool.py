@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Form Filling Tool for Vietnamese Document Form Filler
+Form Filling Tool for Vietnamese Document Form Filler.
+
 Handles filling DOCX forms with translated content.
 """
 
@@ -20,20 +21,19 @@ logger = logging.getLogger(__name__)
 class FormFillingTool(BaseTool):
     """Tool for filling DOCX forms with translated content."""
 
-
     name: str = "form_filler"
     description: str = "Fill DOCX form fields with provided content"
+    llm: any = None
 
     def __init__(self, model="llama3.2:3b", *args, **kwargs):
         """Initialize the object."""
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
 
     def _run(
         self, form_path: str, translated_text: str, output_path: str, field_mappings: str = None
     ) -> str:
         """Fill the form with mapped content."""
-
         try:
             doc = Document(form_path)
 
@@ -95,7 +95,6 @@ class FormFillingTool(BaseTool):
 
     def _generate_field_mappings(self, form_path: str, content: str) -> str:
         """Generate field mappings using AI."""
-
         # Analyze form structure
         form_analyzer = FormAnalysisTool()
         form_fields = form_analyzer._run(form_path)
@@ -103,7 +102,6 @@ class FormFillingTool(BaseTool):
         system_prompt = """You are an expert at analyzing documents and mapping content to form fields.
         Given a form structure and translated content, determine how to fill each field appropriately.
         Return ONLY valid JSON in the specified format."""
-
 
         prompt = f"""Form fields found:
 {form_fields}
@@ -123,7 +121,6 @@ Consider the context and purpose of each field. Return only valid JSON in this f
     ]
 }}"""
 
-
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
@@ -138,7 +135,6 @@ Consider the context and purpose of each field. Return only valid JSON in this f
 
     def _create_fallback_mappings(self, doc: Document, content: str) -> list[dict]:
         """Create simple fallback mappings when AI fails."""
-
         paragraphs_with_placeholders = []
         for paragraph in doc.paragraphs:
             text = paragraph.text.strip()
@@ -179,5 +175,5 @@ Consider the context and purpose of each field. Return only valid JSON in this f
                     )
 
             return json.dumps({"field_mappings": mappings})
-        except:
+        except Exception:
             return json.dumps({"field_mappings": []})

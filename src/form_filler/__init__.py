@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Vietnamese Document Form Filler CLI
+Vietnamese Document Form Filler CLI.
+
 A CrewAI-based multi-agent system for processing Vietnamese documents and filling English DOCX forms.
 """
 

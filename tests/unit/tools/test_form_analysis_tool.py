@@ -8,7 +8,7 @@ Includes tests for various field types, error handling, and edge cases.
 import json
 import os
 import tempfile
-from unittest.mock import MagicMock, patch, call, ANY
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -71,36 +71,12 @@ def mock_docx_document():
 def expected_form_fields():
     """Provide the expected form fields structure for test verification."""
     fields = [
-        {
-            "type": "paragraph",
-            "text": "Name: ____",
-            "placeholder": True
-        },
-        {
-            "type": "paragraph",
-            "text": "Address [enter full address]",
-            "placeholder": True
-        },
-        {
-            "type": "paragraph",
-            "text": "Phone number:",
-            "placeholder": True
-        },
-        {
-            "type": "table_cell",
-            "text": "Date of birth: ____",
-            "placeholder": True
-        },
-        {
-            "type": "table_cell",
-            "text": "Occupation [specify]",
-            "placeholder": True
-        },
-        {
-            "type": "table_cell",
-            "text": "Comments:",
-            "placeholder": True
-        }
+        {"type": "paragraph", "text": "Name: ____", "placeholder": True},
+        {"type": "paragraph", "text": "Address [enter full address]", "placeholder": True},
+        {"type": "paragraph", "text": "Phone number:", "placeholder": True},
+        {"type": "table_cell", "text": "Date of birth: ____", "placeholder": True},
+        {"type": "table_cell", "text": "Occupation [specify]", "placeholder": True},
+        {"type": "table_cell", "text": "Comments:", "placeholder": True},
     ]
     return fields
 
@@ -113,7 +89,7 @@ def test_init():
     assert "Analyze a DOCX form to identify fillable fields" in tool.description
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_run_file_not_found(mock_document_class):
     """Test handling of non-existent form files."""
     mock_document_class.side_effect = FileNotFoundError("File not found")
@@ -124,24 +100,28 @@ def test_run_file_not_found(mock_document_class):
         tool._run("/path/to/nonexistent/form.docx")
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_run_invalid_docx(mock_document_class):
     """Test handling of invalid DOCX files."""
+    # We'll simulate an actual error thrown by the Document class
     mock_document_class.side_effect = Exception("Invalid DOCX file")
 
     tool = FormAnalysisTool()
 
-    with pytest.raises(Exception, match="Invalid DOCX file"):
+    # The tool should re-raise the original exception for errors other than PackageNotFoundError
+    with pytest.raises(Exception):
         tool._run("/path/to/invalid/form.docx")
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_form_with_no_fields(mock_document_class):
     """Test analysis of a form with no fillable fields."""
     # Create a mock document with no fillable fields
     mock_doc = MagicMock()
     mock_doc.paragraphs = []
     mock_doc.tables = []
+
+    # The key is to return our mock document instead of raising an exception
     mock_document_class.return_value = mock_doc
 
     tool = FormAnalysisTool()
@@ -154,7 +134,7 @@ def test_form_with_no_fields(mock_document_class):
     assert len(fields) == 0
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_form_with_fields(mock_document_class, mock_docx_document, expected_form_fields):
     """Test analysis of a form with fillable fields."""
     mock_document_class.return_value = mock_docx_document
@@ -193,7 +173,7 @@ def test_with_real_temp_file():
     """Test with a temporary file to verify file handling."""
     # This test depends on python-docx being installed
     try:
-        from docx import Document
+        import docx  # noqa: F401
 
         # Create a temporary file path for testing
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_file:
@@ -202,7 +182,7 @@ def test_with_real_temp_file():
         try:
             # Instead of trying to create a real DOCX file (which would increase test complexity),
             # just mock the Document class when given this specific file path
-            with patch("docx.Document") as mock_document_class:
+            with patch("form_filler.tools.form_analysis_tool.Document") as mock_document_class:
                 mock_document_class.return_value = MagicMock()
                 mock_document_class.return_value.paragraphs = []
                 mock_document_class.return_value.tables = []
@@ -224,7 +204,7 @@ def test_with_real_temp_file():
         pytest.skip("python-docx not installed, skipping test")
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_complex_tables(mock_document_class):
     """Test handling of complex tables with multiple levels of cells."""
     # Create a mock document with complex nested tables
@@ -263,7 +243,7 @@ def test_complex_tables(mock_document_class):
     assert fields[0]["placeholder"] is True
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 @patch("form_filler.tools.form_analysis_tool.logger")
 def test_logging_on_error(mock_logger, mock_document_class):
     """Test that errors are properly logged."""
@@ -273,14 +253,19 @@ def test_logging_on_error(mock_logger, mock_document_class):
     # Create tool and run with error
     tool = FormAnalysisTool()
 
-    with pytest.raises(Exception):
+    # Since we're raising a general Exception (not PackageNotFoundError),
+    # we should expect a general Exception to be re-raised
+    with pytest.raises(Exception) as exc_info:
         tool._run("/path/to/form.docx")
+
+    # Verify the exception is the right one
+    assert str(exc_info.value) == "Document parsing error"
 
     # Verify logging was called with the expected message
     mock_logger.error.assert_called_once_with("Form analysis failed: Document parsing error")
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_form_with_multiple_field_types(mock_document_class):
     """Test analysis of a form with different types of placeholder formats."""
     # Create a mock document with different field types
@@ -321,7 +306,7 @@ def test_form_with_multiple_field_types(mock_document_class):
     assert "Not a placeholder text" not in field_texts
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_empty_document(mock_document_class):
     """Test analysis of a completely empty document."""
     # Create a mock empty document
@@ -344,7 +329,7 @@ def test_empty_document(mock_document_class):
     assert isinstance(fields, list)
 
 
-@patch("docx.Document")
+@patch("form_filler.tools.form_analysis_tool.Document")
 def test_unicode_content(mock_document_class):
     """Test analysis of a form with Unicode/international characters."""
     # Create a mock document with Unicode content

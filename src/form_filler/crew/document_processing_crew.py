@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Document Processing Crew for Vietnamese Document Form Filler.
+
 Main CrewAI crew for processing documents and filling forms.
 """
 
@@ -24,15 +25,21 @@ logger = logging.getLogger(__name__)
 class DocumentProcessingCrew:
     """Main CrewAI crew for document processing."""
 
-
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         text_model: str = "llama3.2:3b",
         extraction_method: str = "traditional",
         vision_model: str = "llava:7b",
+        openai_api_key: str = None,
+        openai_model: str = "gpt-4-vision-preview",
     ):
         # Create agents
-        self.document_collector = create_document_collector_agent(extraction_method, vision_model)
+        self.document_collector = create_document_collector_agent(
+            extraction_method=extraction_method,
+            vision_model=vision_model,
+            openai_api_key=openai_api_key,
+            openai_model=openai_model,
+        )
         self.translator = create_translator_agent(text_model)
         self.form_analyst = create_form_analyst_agent()
         self.form_filler = create_form_filler_agent(text_model)
@@ -41,14 +48,22 @@ class DocumentProcessingCrew:
         self.extraction_method = extraction_method
         self.text_model = text_model
         self.vision_model = vision_model
+        self.openai_api_key = openai_api_key
+        self.openai_model = openai_model
 
     def process_document(
         self, source_path: str, form_path: str, output_path: str
     ) -> ProcessingResult:
         """Process a document through the CrewAI pipeline."""
-
         try:
             # Define tasks
+            # Determine extraction method description for task
+            extraction_method_desc = "traditional OCR methods"
+            if self.extraction_method == "ai":
+                extraction_method_desc = "AI vision models"
+            elif self.extraction_method == "openai":
+                extraction_method_desc = "OpenAI Vision API"
+
             extraction_task = Task(
                 description=f"""Extract all text content from the Vietnamese document at: {source_path}
 
@@ -56,10 +71,9 @@ class DocumentProcessingCrew:
                 - Extract all visible text including Vietnamese diacritics
                 - Preserve formatting and structure where possible
                 - Handle both text-based and image-based content
-                - Use {'AI vision models' if self.extraction_method == 'ai' else 'traditional OCR methods'}
+                - Use {extraction_method_desc}
 
                 Return the complete extracted text.""",
-
                 agent=self.document_collector,
                 expected_output="Complete text content extracted from the Vietnamese document",
             )
@@ -74,7 +88,6 @@ class DocumentProcessingCrew:
                 - Keep formatting structure where relevant
 
                 Return the complete English translation.""",
-
                 agent=self.translator,
                 expected_output="Professional English translation of the Vietnamese text",
                 context=[extraction_task],
@@ -89,7 +102,6 @@ class DocumentProcessingCrew:
                 - Provide detailed information about form structure
 
                 Return structured information about the form fields.""",
-
                 agent=self.form_analyst,
                 expected_output="Detailed analysis of form structure and fillable fields",
             )
@@ -142,9 +154,12 @@ class DocumentProcessingCrew:
                     metadata={
                         "extraction_method": self.extraction_method,
                         "text_model": self.text_model,
-                        "vision_model": self.vision_model
-                        if self.extraction_method == "ai"
-                        else None,
+                        "vision_model": (
+                            self.vision_model if self.extraction_method == "ai" else None
+                        ),
+                        "openai_model": (
+                            self.openai_model if self.extraction_method == "openai" else None
+                        ),
                     },
                 )
             except json.JSONDecodeError:
@@ -155,9 +170,12 @@ class DocumentProcessingCrew:
                     metadata={
                         "extraction_method": self.extraction_method,
                         "text_model": self.text_model,
-                        "vision_model": self.vision_model
-                        if self.extraction_method == "ai"
-                        else None,
+                        "vision_model": (
+                            self.vision_model if self.extraction_method == "ai" else None
+                        ),
+                        "openai_model": (
+                            self.openai_model if self.extraction_method == "openai" else None
+                        ),
                     },
                 )
 
