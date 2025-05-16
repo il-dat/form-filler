@@ -16,4 +16,4 @@ class ProcessingResult:
     success: bool
     data: Any
     error: str | None = None
-    metadata: dict | None = None
+    metadata: dict[str, Any] | None = None

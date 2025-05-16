@@ -47,7 +47,7 @@ class ProcessingResult:
     success: bool
     data: Any
     error: str | None = None
-    metadata: dict | None = None
+    metadata: dict[str, Any] | None = None
 
 
 # Custom Tools for CrewAI Agents
@@ -69,23 +69,24 @@ class DocumentExtractionTool(BaseTool):
     def _run(self, file_path: str) -> str:
         """Extract text from the given file."""
         try:
-            file_path = Path(file_path)
+            # Convert string path to Path object
+            path_obj = Path(file_path)
 
-            if not file_path.exists():
+            if not path_obj.exists():
                 raise Exception(f"File not found: {file_path}")
 
-            if file_path.suffix.lower() == ".pdf":
+            if path_obj.suffix.lower() == ".pdf":
                 if self.extraction_method == "ai":
-                    return self._extract_from_pdf_ai(file_path)
+                    return self._extract_from_pdf_ai(path_obj)
                 else:
-                    return self._extract_from_pdf_traditional(file_path)
-            elif file_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".tiff"]:
+                    return self._extract_from_pdf_traditional(path_obj)
+            elif path_obj.suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".tiff"]:
                 if self.extraction_method == "ai":
-                    return self._extract_from_image_ai(file_path)
+                    return self._extract_from_image_ai(path_obj)
                 else:
-                    return self._extract_from_image_traditional(file_path)
+                    return self._extract_from_image_traditional(path_obj)
             else:
-                raise Exception(f"Unsupported file type: {file_path.suffix}")
+                raise Exception(f"Unsupported file type: {path_obj.suffix}")
 
         except Exception as e:
             logger.error(f"Error in DocumentExtractionTool: {e}")

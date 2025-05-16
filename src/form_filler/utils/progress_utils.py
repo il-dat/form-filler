@@ -8,7 +8,7 @@ during long-running operations in the form-filler tool.
 
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeVar
 
 from rich.console import Console
 from rich.progress import (
@@ -21,6 +21,8 @@ from rich.progress import (
 )
 from tqdm import tqdm
 
+ProgressType = Progress | tqdm
+
 
 def create_progress_bar(
     total: int,
@@ -28,7 +30,7 @@ def create_progress_bar(
     use_rich: bool = True,
     transient: bool = True,
     leave: bool = False,
-) -> Progress | tqdm:
+) -> ProgressType:
     """
     Create a progress bar for long-running operations.
 
@@ -83,12 +85,15 @@ def create_indeterminate_spinner(description: str = "Processing") -> Progress:
     )
 
 
+T = TypeVar("T")
+
+
 def with_progress_bar(
-    iterable: list,
+    iterable: list[T],
     description: str = "Processing",
     use_rich: bool = True,
     callback: Callable | None = None,
-) -> list:
+) -> list[T]:
     """
     Execute a function for each item in an iterable with a progress bar.
 

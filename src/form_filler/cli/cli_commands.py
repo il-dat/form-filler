@@ -169,7 +169,12 @@ def process(
         task_id = progress.add_task("Processing document...", total=None)
 
         start_time = time.time()
-        result = crew_processor.process_document(source, form, output)
+        # Convert Path to string if needed
+        source_str = str(source) if hasattr(source, "__fspath__") else source
+        form_str = str(form) if hasattr(form, "__fspath__") else form
+        output_str = str(output_path)
+
+        result = crew_processor.process_document(source_str, form_str, output_str)
         processing_time = time.time() - start_time
 
         # Complete the progress
@@ -248,7 +253,9 @@ def extract(ctx, file_path, extraction_method, vision_model, openai_api_key, ope
             task_id = progress.add_task("Extracting text...", total=None)
 
             start_time = time.time()
-            extracted_text = extractor._run(file_path)
+            # Convert Path to string if needed
+            file_path_str = str(file_path) if hasattr(file_path, "__fspath__") else file_path
+            extracted_text = extractor._run(file_path_str)
             processing_time = time.time() - start_time
 
             # Complete the progress

@@ -105,7 +105,7 @@ def test_process_command_success(mock_crew, runner, mock_processing_result_succe
                 "process",
                 source_file.name,
                 form_file.name,
-                output_path,
+                str(output_path),
             ],
         )
 
@@ -125,7 +125,7 @@ def test_process_command_success(mock_crew, runner, mock_processing_result_succe
         mock_instance.process_document.assert_called_once_with(
             source_file.name,
             form_file.name,
-            output_path,
+            str(output_path),
         )
 
 
@@ -165,7 +165,7 @@ def test_process_command_with_openai(mock_crew, runner, mock_processing_result_s
                 "process",
                 source_file.name,
                 form_file.name,
-                output_path,
+                str(output_path),
             ],
         )
 
@@ -186,7 +186,7 @@ def test_process_command_with_openai(mock_crew, runner, mock_processing_result_s
         mock_instance.process_document.assert_called_once_with(
             source_file.name,
             form_file.name,
-            output_path,
+            str(output_path),
         )
 
 
@@ -208,7 +208,9 @@ def test_process_command_failure(mock_crew, runner, mock_processing_result_failu
 
         # Run the command with mocked sys.exit to prevent test from actually exiting
         with patch("sys.exit") as mock_exit:
-            result = runner.invoke(cli, ["process", source_file.name, form_file.name, output_path])
+            result = runner.invoke(
+                cli, ["process", source_file.name, form_file.name, str(output_path)]
+            )
 
             # Check the result
             assert "Error: Failed to process document" in result.output
