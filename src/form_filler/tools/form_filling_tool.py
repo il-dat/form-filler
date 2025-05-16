@@ -11,6 +11,7 @@ import logging
 from crewai.tools import BaseTool
 from docx import Document
 from langchain_community.chat_models import ChatOllama
+from pydantic import SkipValidation
 
 from form_filler.tools.form_analysis_tool import FormAnalysisTool
 
@@ -23,7 +24,7 @@ class FormFillingTool(BaseTool):
 
     name: str = "form_filler"
     description: str = "Fill DOCX form fields with provided content"
-    llm: any = None
+    llm: SkipValidation[object] = None
 
     def __init__(self, model="llama3.2:3b", *args, **kwargs):
         """Initialize the object."""

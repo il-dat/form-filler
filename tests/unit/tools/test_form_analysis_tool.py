@@ -109,7 +109,7 @@ def test_run_invalid_docx(mock_document_class):
     tool = FormAnalysisTool()
 
     # The tool should re-raise the original exception for errors other than PackageNotFoundError
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Invalid DOCX file"):
         tool._run("/path/to/invalid/form.docx")
 
 

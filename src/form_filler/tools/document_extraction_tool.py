@@ -5,7 +5,6 @@ import base64
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any
 
 import fitz  # PyMuPDF for PDF
 import pytesseract
@@ -13,7 +12,7 @@ import requests
 from crewai.tools import BaseTool
 from langchain_ollama import OllamaLLM
 from PIL import Image
-from pydantic import Field, PrivateAttr
+from pydantic import Field, PrivateAttr, SkipValidation
 
 # Setup logging
 logging.basicConfig(
@@ -33,7 +32,7 @@ class DocumentExtractionTool(BaseTool):
     openai_model: str = Field(default="gpt-4-vision-preview")
 
     # Private attribute for ollama_llm
-    _ollama_llm: Any | None = PrivateAttr(default=None)
+    _ollama_llm: SkipValidation[object] | None = PrivateAttr(default=None)
 
     def __init__(
         self,
@@ -168,7 +167,9 @@ class DocumentExtractionTool(BaseTool):
             elif hasattr(response, "content"):
                 extracted_text = response.content
             else:
-                logger.warning(f"Unexpected response format: {type(response)}, falling back to OCR")
+                logger.warning(
+                    f"Unexpected response format: {type(response)}, falling back to OCR"
+                )
                 return self._extract_from_image_traditional(file_path)
 
             if not extracted_text:

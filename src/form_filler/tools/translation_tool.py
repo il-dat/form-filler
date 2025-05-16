@@ -9,6 +9,7 @@ import logging
 
 from crewai.tools import BaseTool
 from langchain_community.chat_models import ChatOllama
+from pydantic import SkipValidation
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class TranslationTool(BaseTool):
 
     name: str = "vietnamese_translator"
     description: str = "Translate Vietnamese text to English using Ollama LLM"
-    llm: any = None
+    llm: SkipValidation[object] = None
 
     def __init__(self, model="llama3.2:3b", *args, **kwargs):
         """Initialize the object."""

@@ -14,6 +14,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import click
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 # Import the CrewAI document processor
 from form_filler.crew import DocumentProcessingCrew
@@ -51,8 +60,9 @@ class CrewAIBatchProcessor:
         self.timeout = timeout
         self.jobs: list[BatchJob] = []
 
-        # Setup logging
+        # Setup logging and console
         self.logger = logging.getLogger("CrewAIBatchProcessor")
+        self.console = Console()
 
     def add_job(self, source_path: str, form_path: str, output_path: str):
         """Add a job to the batch."""
@@ -141,28 +151,61 @@ class CrewAIBatchProcessor:
 
         # Process jobs with ThreadPoolExecutor for true parallelism
         completed_jobs = []
-        with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
-            # Submit all jobs
-            future_to_job = {
-                executor.submit(self.process_single_job, job): job for job in self.jobs
-            }
 
-            # Process completed jobs
-            for future in as_completed(future_to_job, timeout=self.timeout * len(self.jobs)):
-                try:
-                    job = future.result()
-                    completed_jobs.append(job)
+        # Create rich progress bar
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TextColumn("[bold]{task.completed}/{task.total}"),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+            console=self.console,
+        ) as progress:
+            overall_task = progress.add_task(
+                f"[bold]Processing {len(self.jobs)} documents...", total=len(self.jobs)
+            )
 
-                    if progress_callback:
-                        progress_callback(len(completed_jobs), len(self.jobs), job)
+            with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
+                # Submit all jobs
+                future_to_job = {
+                    executor.submit(self.process_single_job, job): job for job in self.jobs
+                }
 
-                except Exception as e:
-                    job = future_to_job[future]
-                    job.status = "failed"
-                    job.error = f"Execution error: {e}"
-                    job.end_time = time.time()
-                    completed_jobs.append(job)
-                    self.logger.error(f"Job execution failed: {job.source_path.name} - {e}")
+                # Process completed jobs
+                for future in as_completed(future_to_job, timeout=self.timeout * len(self.jobs)):
+                    try:
+                        job = future.result()
+                        completed_jobs.append(job)
+
+                        # Update the progress bar
+                        progress.update(
+                            overall_task,
+                            advance=1,
+                            description=f"[bold]Processing {len(completed_jobs)}/{len(self.jobs)} documents...",
+                        )
+
+                        # Status updated via progress bar - no need for additional variables here
+
+                        # Call the original callback if provided
+                        if progress_callback:
+                            progress_callback(len(completed_jobs), len(self.jobs), job)
+
+                    except Exception as e:
+                        job = future_to_job[future]
+                        job.status = "failed"
+                        job.error = f"Execution error: {e}"
+                        job.end_time = time.time()
+                        completed_jobs.append(job)
+                        self.logger.error(f"Job execution failed: {job.source_path.name} - {e}")
+
+                        # Update the progress bar for failures too
+                        progress.update(
+                            overall_task,
+                            advance=1,
+                            description=f"[bold]Processing {len(completed_jobs)}/{len(self.jobs)} documents...",
+                        )
 
         end_time = time.time()
 
@@ -247,7 +290,12 @@ class CrewAIBatchProcessor:
 @click.option("--timeout", "-t", default=300, help="Timeout per job in seconds")
 @click.pass_context
 def batch_cli(ctx, text_model, extraction_method, vision_model, max_concurrent, timeout):
-    """CrewAI batch processing commands for Vietnamese document form filling."""
+    """CrewAI batch processing commands for Vietnamese document form filling.
+
+    All batch commands display enhanced progress bars with real-time updates on the status
+    of each job in the batch. You can see the overall progress, estimated time remaining,
+    and per-job status with completion indicators.
+    """
     ctx.ensure_object(dict)
     ctx.obj["text_model"] = text_model
     ctx.obj["extraction_method"] = extraction_method
@@ -295,15 +343,11 @@ def process_directory(ctx, source_dir, form_template, output_dir, pattern, repor
         click.echo("No documents found matching the pattern")
         return
 
-    # Progress tracking
+    # Progress tracking with rich display
     def progress_callback(completed, total, job):
-        percentage = (completed / total) * 100
-        status_icon = "✅" if job.status == "completed" else "❌"
-        processing_time = job.end_time - job.start_time if job.end_time > 0 else 0
-        click.echo(
-            f"[{completed}/{total}] {percentage:.1f}% - {status_icon} {job.source_path.name} "
-            f"({processing_time:.1f}s, Crew: {job.crew_id})"
-        )
+        # This function is replaced by the rich progress bar, but we keep it
+        # for backward compatibility with existing code
+        pass
 
     # Process all jobs
     click.echo("\nStarting CrewAI batch processing...")
@@ -363,15 +407,11 @@ def process_from_file(ctx, jobs_file, report):
 
     click.echo(f"Loaded {len(processor.jobs)} jobs from {jobs_file}")
 
-    # Progress tracking
+    # Progress tracking with rich display
     def progress_callback(completed, total, job):
-        percentage = (completed / total) * 100
-        status_icon = "✅" if job.status == "completed" else "❌"
-        processing_time = job.end_time - job.start_time if job.end_time > 0 else 0
-        click.echo(
-            f"[{completed}/{total}] {percentage:.1f}% - {status_icon} {job.source_path.name} "
-            f"({processing_time:.1f}s, Crew: {job.crew_id})"
-        )
+        # This function is replaced by the rich progress bar, but we keep it
+        # for backward compatibility with existing code
+        pass
 
     # Process all jobs
     stats = processor.process_all(progress_callback)

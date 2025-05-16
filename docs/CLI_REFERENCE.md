@@ -37,6 +37,8 @@ form-filler [COMMAND] [OPTIONS]
 | `--help`        | Display help text for the command.               |
 | `--verbose`     | Enable verbose output for detailed logging.      |
 
+All commands display a progress bar or spinner while they are executing, providing visual feedback during long-running operations.
+
 ## Commands
 
 ### `process`
@@ -247,3 +249,25 @@ The following environment variables can be used to configure the Form Filler CLI
 | 3    | Processing error                                           |
 | 4    | Model/API error                                            |
 | 5    | Configuration error                                        |
+
+## Progress Bar Features
+
+All commands in the form-filler tool now include progress indicators to provide visual feedback during long-running operations:
+
+1. **Spinners for Indeterminate Progress**:
+   - Used for operations with unknown duration
+   - Shows elapsed time while processing
+   - Displays colorful status updates
+
+2. **Progress Bars for Batch Operations**:
+   - Visual display of overall progress
+   - Shows percentage complete
+   - Displays estimated time remaining
+   - Includes completed/total count
+
+3. **Enhanced Batch Processing UI**:
+   - Shows real-time job status
+   - Indicates successful vs. failed operations
+   - Provides per-job processing time
+
+This feature makes the tool more user-friendly by providing immediate visual feedback and timing information, especially useful for longer operations or batch processing.

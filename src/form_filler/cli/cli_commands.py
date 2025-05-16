@@ -12,12 +12,15 @@ from pathlib import Path
 
 import aiohttp
 import click
+from rich.console import Console
 
 from form_filler.crew import DocumentProcessingCrew
 from form_filler.tools import DocumentExtractionTool, TranslationTool
+from form_filler.utils.progress_utils import create_indeterminate_spinner
 
 # Setup logging
 logger = logging.getLogger(__name__)
+console = Console()
 
 
 def show_version(ctx, param, value):
@@ -77,6 +80,9 @@ def cli(ctx, verbose, model, extraction_method, vision_model, openai_api_key, op
 
     A CrewAI-based multi-agent system for processing Vietnamese documents (PDF/images)
     and filling English DOCX forms using local Ollama LLMs.
+
+    All commands display progress bars or spinners during execution to provide
+    visual feedback for long-running operations.
 
     Extraction Methods:
     - traditional: Use PyMuPDF for PDFs and Tesseract for images
@@ -145,26 +151,40 @@ def process(
         openai_model=openai_model,
     )
 
-    # Process the document
-    start_time = time.time()
-    result = crew_processor.process_document(source, form, output)
-    processing_time = time.time() - start_time
+    # Process the document with progress bar
+    with create_indeterminate_spinner("Processing document...") as progress:
+        task_id = progress.add_task("Processing document...", total=None)
+
+        start_time = time.time()
+        result = crew_processor.process_document(source, form, output)
+        processing_time = time.time() - start_time
+
+        # Complete the progress
+        progress.update(task_id, completed=True)
 
     if result.success:
-        click.echo(f"✅ Success! Document processed in {processing_time:.2f}s")
-        click.echo(f"Filled form saved to: {output}")
+        console.print(f"[green]✅ Success![/green] Document processed in {processing_time:.2f}s")
+        console.print(f"Filled form saved to: [blue]{output}[/blue]")
         if result.metadata:
-            click.echo(f"Extraction method: {result.metadata.get('extraction_method', 'N/A')}")
-            click.echo(f"Text model: {result.metadata.get('text_model', 'N/A')}")
+            console.print(
+                f"Extraction method: [yellow]{result.metadata.get('extraction_method', 'N/A')}[/yellow]"
+            )
+            console.print(
+                f"Text model: [yellow]{result.metadata.get('text_model', 'N/A')}[/yellow]"
+            )
             if result.metadata.get("vision_model"):
-                click.echo(f"Vision model: {result.metadata.get('vision_model')}")
+                console.print(
+                    f"Vision model: [yellow]{result.metadata.get('vision_model')}[/yellow]"
+                )
             if result.metadata.get("openai_model") and extraction_method == "openai":
-                click.echo(f"OpenAI model: {result.metadata.get('openai_model')}")
+                console.print(
+                    f"OpenAI model: [yellow]{result.metadata.get('openai_model')}[/yellow]"
+                )
         if result.data and isinstance(result.data, dict):
             fields_filled = result.data.get("fields_filled", "N/A")
-            click.echo(f"Fields filled: {fields_filled}")
+            console.print(f"Fields filled: [yellow]{fields_filled}[/yellow]")
     else:
-        click.echo(f"❌ Error: {result.error}")
+        console.print(f"[red]❌ Error:[/red] {result.error}")
         sys.exit(1)
 
 
@@ -206,19 +226,29 @@ def extract(ctx, file_path, extraction_method, vision_model, openai_api_key, ope
     )
 
     try:
-        click.echo(f"Extracting text using {extraction_method} method...")
+        console.print(f"Extracting text using [yellow]{extraction_method}[/yellow] method...")
         if extraction_method == "ai":
-            click.echo(f"Vision model: {vision_model}")
+            console.print(f"Vision model: [yellow]{vision_model}[/yellow]")
 
-        extracted_text = extractor._run(file_path)
+        # Add progress spinner during extraction
+        with create_indeterminate_spinner("Extracting text...") as progress:
+            task_id = progress.add_task("Extracting text...", total=None)
 
-        click.echo(f"Extracted text ({extraction_method} method):")
-        click.echo("-" * 50)
-        click.echo(extracted_text)
-        click.echo("-" * 50)
-        click.echo(f"Characters: {len(extracted_text)}")
+            start_time = time.time()
+            extracted_text = extractor._run(file_path)
+            processing_time = time.time() - start_time
+
+            # Complete the progress
+            progress.update(task_id, completed=True)
+
+        console.print(f"\n[green]✅ Text extracted[/green] in {processing_time:.2f}s")
+        console.print(f"Extracted text ([yellow]{extraction_method}[/yellow] method):")
+        console.print("[blue]" + "-" * 50 + "[/blue]")
+        console.print(extracted_text)
+        console.print("[blue]" + "-" * 50 + "[/blue]")
+        console.print(f"Characters: [yellow]{len(extracted_text)}[/yellow]")
     except Exception as e:
-        click.echo(f"❌ Error: {e}")
+        console.print(f"[red]❌ Error:[/red] {e}")
         sys.exit(1)
 
 
@@ -233,15 +263,26 @@ def translate(ctx, vietnamese_text, model):
     translator = TranslationTool(model=model)
 
     try:
-        click.echo(f"Translating with model: {model}")
-        english_text = translator._run(vietnamese_text)
+        console.print(f"Translating with model: [yellow]{model}[/yellow]")
 
-        click.echo("Translation:")
-        click.echo("-" * 50)
-        click.echo(english_text)
-        click.echo("-" * 50)
+        # Add progress spinner during translation
+        with create_indeterminate_spinner("Translating text...") as progress:
+            task_id = progress.add_task("Translating text...", total=None)
+
+            start_time = time.time()
+            english_text = translator._run(vietnamese_text)
+            processing_time = time.time() - start_time
+
+            # Complete the progress
+            progress.update(task_id, completed=True)
+
+        console.print(f"\n[green]✅ Text translated[/green] in {processing_time:.2f}s")
+        console.print("Translation:")
+        console.print("[blue]" + "-" * 50 + "[/blue]")
+        console.print(english_text)
+        console.print("[blue]" + "-" * 50 + "[/blue]")
     except Exception as e:
-        click.echo(f"❌ Error: {e}")
+        console.print(f"[red]❌ Error:[/red] {e}")
         sys.exit(1)
 
 

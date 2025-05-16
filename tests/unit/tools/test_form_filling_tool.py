@@ -245,9 +245,7 @@ def test_run_with_invalid_mappings_json(
         ]
 
         tool = FormFillingTool(model="llama3.2:3b")
-        result = tool._run(
-            "/path/to/form.docx", sample_translated_text, "/path/to/output.docx"
-        )
+        result = tool._run("/path/to/form.docx", sample_translated_text, "/path/to/output.docx")
 
         # Verify the result indicates successful fallback
         result_dict = json.loads(result)
@@ -303,9 +301,7 @@ def test_ai_mapping_error(
         )
 
         tool = FormFillingTool(model="llama3.2:3b")
-        result = tool._run(
-            "/path/to/form.docx", sample_translated_text, "/path/to/output.docx"
-        )
+        result = tool._run("/path/to/form.docx", sample_translated_text, "/path/to/output.docx")
 
         # Verify the result indicates successful fallback
         result_dict = json.loads(result)
@@ -373,7 +369,7 @@ def test_logging_on_error(mock_logger, mock_document_class):
     # Create tool and run with error
     tool = FormFillingTool(model="llama3.2:3b")
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Form filling error"):
         tool._run("/path/to/form.docx", "Translated text", "/path/to/output.docx")
 
     # Verify logging was called with the expected message
@@ -484,15 +480,15 @@ def test_empty_form_fields(mock_document_class):
     tool = FormFillingTool(model="llama3.2:3b")
 
     # Create mappings that won't match anything
-    field_mappings = json.dumps({
-        "field_mappings": [
-            {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.95}
-        ]
-    })
-
-    result = tool._run(
-        "/path/to/form.docx", "John Smith", "/path/to/output.docx", field_mappings
+    field_mappings = json.dumps(
+        {
+            "field_mappings": [
+                {"field_text": "Name: ____", "fill_with": "John Smith", "confidence": 0.95}
+            ]
+        }
     )
+
+    result = tool._run("/path/to/form.docx", "John Smith", "/path/to/output.docx", field_mappings)
 
     # Verify the result indicates no fields were filled
     result_dict = json.loads(result)

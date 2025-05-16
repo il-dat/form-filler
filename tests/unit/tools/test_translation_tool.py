@@ -76,7 +76,10 @@ def test_run_successful_translation(
     call_args = mock_chat_ollama_instance.invoke.call_args[0][0]
     assert len(call_args) == 2
     assert call_args[0]["role"] == "system"
-    assert "professional translator specializing in Vietnamese to English translation" in call_args[0]["content"]
+    assert (
+        "professional translator specializing in Vietnamese to English translation"
+        in call_args[0]["content"]
+    )
     assert call_args[1]["role"] == "user"
     assert sample_vietnamese_text in call_args[1]["content"]
 
@@ -145,7 +148,7 @@ def test_logging_on_error(mock_logger, mock_chat_ollama, sample_vietnamese_text)
     # Create tool and test error handling with logging
     tool = TranslationTool(model="llama3.2:3b")
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Translation API error"):
         tool._run(sample_vietnamese_text)
 
     # Verify logging was called with the expected message

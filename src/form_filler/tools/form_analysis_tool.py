@@ -40,7 +40,9 @@ class FormAnalysisTool(BaseTool):
                 for row in table.rows:
                     for cell in row.cells:
                         cell_text = cell.text.strip()
-                        if cell_text and ("____" in cell_text or "[" in cell_text or cell_text.endswith(":")):
+                        if cell_text and (
+                            "____" in cell_text or "[" in cell_text or cell_text.endswith(":")
+                        ):
                             form_fields.append(
                                 {"type": "table_cell", "text": cell_text, "placeholder": True}
                             )
@@ -50,7 +52,7 @@ class FormAnalysisTool(BaseTool):
         except PackageNotFoundError as e:
             logger.error(f"Form analysis failed: {e}")
             # Re-raise as FileNotFoundError for consistent API
-            raise FileNotFoundError(f"Form file not found: {form_path}")
+            raise FileNotFoundError(f"Form file not found: {form_path}") from e
         except Exception as e:
             logger.error(f"Form analysis failed: {e}")
             raise
