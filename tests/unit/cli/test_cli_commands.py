@@ -15,6 +15,20 @@ from form_filler.cli.cli_commands import cli
 from form_filler.models.processing_result import ProcessingResult
 
 
+# Compatibility function to verify commands in Click group
+def verify_command_exists(cli_group, command_name):
+    """Verify a command exists in a Click group in a way that works on Python 3.10 and 3.11."""
+    if hasattr(cli_group, "cli_commands") and command_name in cli_group.cli_commands:
+        # Python 3.11 style
+        return True
+    elif hasattr(cli_group, "commands") and command_name in cli_group.commands:
+        # Python 3.10 style
+        return True
+    else:
+        # Fallback to list_commands API
+        return command_name in cli_group.list_commands(None)
+
+
 @pytest.fixture
 def runner():
     """Create a CLI runner for testing Click commands."""
@@ -80,6 +94,8 @@ def test_translate_command_help(runner):
 
 @patch("form_filler.cli.cli_commands.DocumentProcessingCrew")
 def test_process_command_success(mock_crew, runner, mock_processing_result_success):
+    # Verify command exists to ensure cross-Python version compatibility
+    assert verify_command_exists(cli, "process")
     """Test the process command with a successful result."""
     mock_instance = MagicMock()
     mock_instance.process_document.return_value = mock_processing_result_success
@@ -131,6 +147,8 @@ def test_process_command_success(mock_crew, runner, mock_processing_result_succe
 
 @patch("form_filler.cli.cli_commands.DocumentProcessingCrew")
 def test_process_command_with_openai(mock_crew, runner, mock_processing_result_success):
+    # Verify command exists to ensure cross-Python version compatibility
+    assert verify_command_exists(cli, "process")
     """Test the process command with OpenAI extraction method."""
     # Create a modified success result that includes OpenAI info
     openai_result = mock_processing_result_success
@@ -192,6 +210,8 @@ def test_process_command_with_openai(mock_crew, runner, mock_processing_result_s
 
 @patch("form_filler.cli.cli_commands.DocumentProcessingCrew")
 def test_process_command_failure(mock_crew, runner, mock_processing_result_failure):
+    # Verify command exists to ensure cross-Python version compatibility
+    assert verify_command_exists(cli, "process")
     """Test the process command with a failed result."""
     mock_instance = MagicMock()
     mock_instance.process_document.return_value = mock_processing_result_failure
@@ -221,6 +241,8 @@ def test_process_command_failure(mock_crew, runner, mock_processing_result_failu
 
 @patch("form_filler.cli.cli_commands.DocumentExtractionTool")
 def test_extract_command(mock_extraction_tool, runner):
+    # Verify command exists to ensure cross-Python version compatibility
+    assert verify_command_exists(cli, "extract")
     """Test the extract command."""
     mock_instance = MagicMock()
     mock_instance._run.return_value = "Extracted text content"
@@ -252,6 +274,8 @@ def test_extract_command(mock_extraction_tool, runner):
 
 @patch("form_filler.cli.cli_commands.DocumentExtractionTool")
 def test_extract_command_openai(mock_extraction_tool, runner):
+    # Verify command exists to ensure cross-Python version compatibility
+    assert verify_command_exists(cli, "extract")
     """Test the extract command with OpenAI extraction method."""
     mock_instance = MagicMock()
     mock_instance._run.return_value = "OpenAI extracted text content"
@@ -290,6 +314,8 @@ def test_extract_command_openai(mock_extraction_tool, runner):
 
 @patch("form_filler.cli.cli_commands.TranslationTool")
 def test_translate_command(mock_translation_tool, runner):
+    # Verify command exists to ensure cross-Python version compatibility
+    assert verify_command_exists(cli, "translate")
     """Test the translate command."""
     mock_instance = MagicMock()
     mock_instance._run.return_value = "Translated English text"
@@ -311,6 +337,8 @@ def test_translate_command(mock_translation_tool, runner):
 
 @patch("form_filler.cli.cli_commands.show_version")
 def test_version_command(mock_show_version, runner):
+    # Verify command exists to ensure cross-Python version compatibility
+    assert verify_command_exists(cli, "version")
     """Test the version command."""
     # Mock the show_version function
     mock_show_version.return_value = None
