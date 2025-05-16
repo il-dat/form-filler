@@ -67,11 +67,6 @@ form-filler = "form_filler.cli:main"
 form-filler-batch = "form_filler.batch:main"
 
 [project.optional-dependencies]
-web = [
-    "streamlit<2.0.0,>=1.25.0",
-    "plotly<6.0.0,>=5.17.0",
-    "pandas<2.3.0,>=2.0.0",
-]
 dev = [
     "pytest<8.0.0,>=7.0.0",
     "pytest-asyncio<1.0.0,>=0.21.0",
@@ -202,8 +197,6 @@ module = [
     "fitz",
     "pytesseract",
     "mammoth",
-    "streamlit.*",
-    "plotly.*",
 ]
 ignore_missing_imports = true
 
@@ -253,7 +246,6 @@ skips = ["B101", "B404", "B603"]
 test = "pytest tests/"
 test-cov = "pytest --cov=src tests/"
 run-demo = "python src/demo.py"
-run-web = "streamlit run src/streamlit/web_interface.py"
 ruff-check = "ruff check src tests"
 ruff-fix = "ruff check --fix src tests"
 
@@ -281,11 +273,6 @@ sequence = [
 help = "Install the package in development mode"
 
 
-[tool.poe.tasks.install-web]
-sequence = [
-    { cmd = "uv pip install -e \".[web]\"" }
-]
-help = "Install the package with web interface dependencies"
 
 [tool.poe.tasks.install-dev]
 sequence = [
@@ -313,7 +300,7 @@ help = "Set up custom gitleaks configuration, overwriting any existing config"
 
 [tool.poe.tasks.install-all]
 sequence = [
-    { cmd = "uv pip install -e \".[dev,web,monitoring]\"" }
+    { cmd = "uv pip install -e \".[dev,monitoring]\"" }
 ]
 help = "Install the package with all dependencies"
 
@@ -327,7 +314,3 @@ help = "Clean build artifacts and caches"
 [tool.poe.tasks.version]
 cmd = "python -c \"import form_filler; print(f'Form-filler version: {form_filler.__version__}')\""
 help = "Show the current package version"
-
-[tool.poe.tasks.serve]
-cmd = "streamlit run src/streamlit/web_interface.py"
-help = "Run the Streamlit web interface"

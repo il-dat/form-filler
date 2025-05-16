@@ -527,7 +527,7 @@ def main():
     print("   ✅ Scalable parallel processing")
     print("   ✅ Easy configuration and customization")
     print("   ✅ Multiple extraction methods (Traditional, AI, OpenAI)")
-    print("\nTry the CLI commands or web interface for full CrewAI features!")
+    print("\nTry the CLI commands for full CrewAI features!")
 
 
 if __name__ == "__main__":
@@ -886,7 +886,7 @@ async def main():
     demo_configuration()
 
     print("🎉 Demo completed!")
-    print("Try the CLI commands or web interface for more features.")
+    print("Try the CLI commands for more features.")
 
 
 if __name__ == "__main__":
