@@ -8,7 +8,7 @@ during long-running operations in the form-filler tool.
 
 import time
 from collections.abc import Callable
-from typing import Any, TypeAlias, TypeVar
+from typing import Any, TypeAlias, TypeVar, cast
 
 from rich.console import Console
 from rich.progress import (
@@ -20,8 +20,10 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from tqdm import tqdm
+from tqdm.std import tqdm as tqdm_class
 
-ProgressType: TypeAlias = Progress | tqdm
+# Define a proper type for the tqdm class
+ProgressType: TypeAlias = Progress | tqdm_class
 
 
 def create_progress_bar(
@@ -111,11 +113,13 @@ def with_progress_bar(
 
     if use_rich:
         with create_progress_bar(total, description, use_rich=True) as progress:
-            task_id = progress.add_task(description, total=total)
+            # Cast to Progress to make mypy happy
+            rich_progress = cast("Progress", progress)
+            task_id = rich_progress.add_task(description, total=total)
             for item in iterable:
                 result = callback(item) if callback else item
                 results.append(result)
-                progress.advance(task_id)
+                rich_progress.advance(task_id)
     else:
         with tqdm(
             total=total,

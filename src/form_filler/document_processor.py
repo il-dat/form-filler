@@ -896,7 +896,7 @@ def async_command(f: Callable) -> Callable:
 
 
 # Apply async wrapper to commands
-check_ollama = cast(click.Command, async_command(check_ollama))
+check_ollama = cast("click.Command", async_command(check_ollama))
 
 
 if __name__ == "__main__":
