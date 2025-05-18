@@ -7,11 +7,26 @@ A CrewAI-based multi-agent system for processing Vietnamese documents and fillin
 
 import logging
 import os
+import sys
+
+# Add debug logging for telemetry
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 # Disable tracking and telemetry
 os.environ["CREWAI_DO_NOT_TRACK"] = "true"
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 os.environ["LANGCHAIN_TRACKING"] = "false"
+
+# Import and apply telemetry blocking
+try:
+    from form_filler.utils.telemetry_blocker import block_telemetry
+
+    block_telemetry()
+except Exception as e:
+    logging.warning(f"Failed to block telemetry: {e}")
 
 # Import after setting environment variables
 # ruff: noqa: E402
