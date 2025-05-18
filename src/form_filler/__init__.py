@@ -9,52 +9,19 @@ import logging
 import os
 import sys
 
-# Set early environment variables for LiteLLM to prevent network requests
-# This needs to happen before any imports
+# Set environment variables to disable telemetry and tracking
+# This is a simpler approach than patching network libraries
 os.environ["LITELLM_TELEMETRY"] = "false"
-# Set an empty model cost map URL to prevent the request during import
-os.environ["LITELLM_MODEL_COST_MAP_URL"] = ""
+os.environ["LITELLM_MODEL_COST_MAP_URL"] = ""  # Prevent URL fetch at import time
+os.environ["CREWAI_DO_NOT_TRACK"] = "true"
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["LANGCHAIN_TRACKING"] = "false"
 
 # Add debug logging for telemetry
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-
-# Disable tracking and telemetry for other libraries
-os.environ["CREWAI_DO_NOT_TRACK"] = "true"
-os.environ["LANGCHAIN_TRACING_V2"] = "false"
-os.environ["LANGCHAIN_TRACKING"] = "false"
-
-# Import telemetry blocker and apply it for all commands
-try:
-    import sys
-
-    from form_filler.utils.telemetry_blocker import block_telemetry
-
-    # List of non-functional commands and flags
-    non_functional_args = [
-        "--help",
-        "-h",
-        "--version",
-        "-v",
-        "version",
-        "check-ollama",
-        "list-providers",
-    ]
-
-    # Check if this is a help command
-    is_help_command = any(arg in sys.argv for arg in non_functional_args)
-
-    # Always block telemetry, but let the blocker know if this is a help command
-    # This ensures the LiteLLM patch returns an empty cost map for help commands
-    block_telemetry(is_help_command=is_help_command)
-
-    # Set litellm-specific environment variables to prevent network requests
-    # This helps prevent the model_cost_map_url fetch when a user runs --help
-    os.environ["LITELLM_TELEMETRY"] = "false"
-except Exception as e:
-    logging.warning(f"Failed to block telemetry: {e}")
 
 # Import after setting environment variables
 # ruff: noqa: E402
