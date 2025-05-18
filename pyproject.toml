@@ -264,6 +264,51 @@ targets = ["src/"]
 exclude = ["tests/", "scripts/", "src/form_filler/utils/"]
 skips = ["B101", "B404", "B603"]
 
+[tool.gitleaks]
+title = "Form-Filler Gitleaks Configuration"
+
+# This is in addition to the default ruleset provided by gitleaks
+
+[[tool.gitleaks.rules]]
+description = "Generic API Key"
+regex = '''(?i)(['"]?)?([a-zA-Z0-9_-]+)_?(key|api|token|secret|passwd|password|auth)(['"]?)?[[:blank:]]*[:=>][[:blank:]]*(['"])?[a-zA-Z0-9_=+\/.]{16,45}(['"])?'''
+tags = ["key", "API", "generic"]
+
+[[tool.gitleaks.rules.allowlist]]
+regexes = ['''example|test|fake|sample''']
+
+[[tool.gitleaks.rules]]
+description = "Generic Secret"
+regex = '''(?i)['"]?[a-zA-Z0-9_-]*(secret|token|key|passwd|password|credential)s?['"]?[[:blank:]]*[:=>][[:blank:]]*['"][a-zA-Z0-9_=+\/.\-]{8,64}['"]'''
+tags = ["key", "secret", "generic"]
+
+[[tool.gitleaks.rules.allowlist]]
+regexes = ['''example|test|fake|sample''']
+
+[[tool.gitleaks.rules]]
+description = "Database Connection String"
+regex = '''(?i)(mongodb|postgresql|mysql|jdbc|redis|ldap):\/\/[^\s:]+:[^\s@]+@[^\s:]+:[0-9]+'''
+tags = ["database", "connection"]
+
+[[tool.gitleaks.rules]]
+description = "Crypto Seed/Salt"
+regex = '''(?i)['"]?seed['"]?[[:blank:]]*[:=>][[:blank:]]*['"][a-f0-9]{64}['"]'''
+tags = ["crypto", "seed"]
+
+[[tool.gitleaks.rules]]
+description = "Environment Variable Assignment With Secret"
+regex = '''(?i)(export|set)[[:blank:]]+[a-zA-Z0-9_]*(key|api|token|secret|passwd|password|auth)[a-zA-Z0-9_]*[[:blank:]]*=[[:blank:]]*['"].{8,64}['"]'''
+tags = ["env", "secret"]
+
+# Allow lists to prevent false positives
+[tool.gitleaks.allowlist]
+description = "Allow list to exclude common patterns"
+paths = [
+    '''(.*?)(test|example|sample|mock)(.*?)\.py''',
+    '''.*pytest_cache.*''',
+    '''.*\.git.*'''
+]
+
 [tool.poe.tasks]
 test = "pytest tests/"
 test-cov = "pytest --cov=src tests/"
@@ -292,7 +337,6 @@ sequence = [
     { cmd = "uv pip install -e \".\"" }
 ]
 help = "Install the package in development mode"
-
 
 
 [tool.poe.tasks.install-dev]

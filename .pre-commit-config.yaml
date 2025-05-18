@@ -19,8 +19,8 @@ repos:
     rev: v8.18.1
     hooks:
       - id: gitleaks
-        # Use custom config if it exists
-        args: ["--config", ".gitleaks.toml"]
+        # Use config from pyproject.toml
+        args: ["--config", "pyproject.toml"]
         # This allows the hook to pass even if the config file doesn't exist yet
         pass_filenames: false
 
