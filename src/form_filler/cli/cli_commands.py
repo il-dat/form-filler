@@ -51,7 +51,7 @@ def show_version(ctx: click.Context, param: click.Parameter, value: bool) -> Non
     "--model",
     "-m",
     default="llama3.2:3b",
-    help="Ollama model to use for text processing",
+    help="Ollama model to use for translation and form filling",
 )
 @click.option(
     "--extraction-method",
@@ -68,8 +68,8 @@ def show_version(ctx: click.Context, param: click.Parameter, value: bool) -> Non
 )
 @click.option(
     "--openai-model",
-    default="gpt-4-vision-preview",
-    help="OpenAI model for OpenAI extraction method",
+    default="gpt-4o",
+    help="OpenAI model for OpenAI extraction method (supports vision)",
 )
 @click.option(
     "--version",
@@ -148,10 +148,10 @@ def process(
 
     Examples:
     # Using local AI extraction with Ollama:
-    python document_processor.py -e ai -vm llava:7b process document.pdf form.docx output.docx
+    form-filler -e ai -vm llava:7b process document.pdf form.docx output.docx
 
     # Using OpenAI API:
-    python document_processor.py -e openai --openai-api-key YOUR_API_KEY process document.pdf form.docx output.docx
+    form-filler -e openai --openai-api-key YOUR_API_KEY process document.pdf form.docx output.docx
     """
     model = model or ctx.obj["model"]
     extraction_method = extraction_method or ctx.obj["extraction_method"]
@@ -236,12 +236,14 @@ def extract(
 ) -> None:
     """Extract text from a Vietnamese document (for testing).
 
+    FILE_PATH: Path to Vietnamese document (PDF or image)
+
     Examples:
     # Using local AI extraction with Ollama:
-    python document_processor.py -e ai -vm llava:7b extract document.pdf
+    form-filler -e ai -vm llava:7b extract document.pdf
 
     # Using OpenAI API:
-    python document_processor.py -e openai --openai-api-key YOUR_API_KEY extract document.pdf
+    form-filler -e openai --openai-api-key YOUR_API_KEY extract document.pdf
     """
     extraction_method = extraction_method or ctx.obj["extraction_method"]
     vision_model = vision_model or ctx.obj["vision_model"]
@@ -292,7 +294,17 @@ def extract(
 @click.option("--model", "-m", help="Override default model")
 @click.pass_context
 def translate(ctx: click.Context, vietnamese_text: str, model: str | None) -> None:
-    """Translate Vietnamese text to English (for testing)."""
+    """Translate Vietnamese text to English (for testing).
+
+    VIETNAMESE_TEXT: Text to translate from Vietnamese to English
+
+    Examples:
+    # Basic usage:
+    form-filler translate "Xin chào"
+
+    # Using specific model:
+    form-filler -m gemma:2b translate "Xin chào từ Việt Nam"
+    """
     model = model or ctx.obj["model"]
 
     translator = TranslationTool(model=model)

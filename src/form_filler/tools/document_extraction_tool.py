@@ -31,7 +31,7 @@ class DocumentExtractionTool(BaseTool):
     extraction_method: str = Field(default="traditional")
     vision_model: str = Field(default="llava:7b")
     openai_api_key: str | None = Field(default=None)
-    openai_model: str = Field(default="gpt-4-vision-preview")
+    openai_model: str = Field(default="gpt-4o")
 
     # Private attribute for ollama_llm
     _ollama_llm = PrivateAttr(default=None)  # Will hold OllamaLLM instance
@@ -41,7 +41,7 @@ class DocumentExtractionTool(BaseTool):
         extraction_method: str = "traditional",
         vision_model: str = "llava:7b",
         openai_api_key: str | None = None,
-        openai_model: str = "gpt-4-vision-preview",
+        openai_model: str = "gpt-4o",
         *args: Any,
         **kwargs: Any,
     ) -> None:

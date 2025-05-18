@@ -21,10 +21,18 @@ from form_filler.cli.cli_commands import cli
 def check_ollama(host: str, port: int, check_vision: bool) -> None:
     """Check if Ollama is running and list available models.
 
-    Args:
-        host: Hostname of the Ollama server
-        port: Port number of the Ollama server
-        check_vision: Whether to also check for vision models
+    Connects to the Ollama server to verify it's running and displays all
+    available models, separating text and vision models for convenience.
+
+    Examples:
+    # Basic check for Ollama:
+    form-filler check-ollama
+
+    # Check for vision models too:
+    form-filler check-ollama --check-vision
+
+    # Connect to remote Ollama:
+    form-filler check-ollama --host remote-server --port 11434
     """
     from form_filler.cli.cli_commands import check_ollama as async_check_ollama
 

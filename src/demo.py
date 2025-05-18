@@ -342,14 +342,14 @@ def demo_crewai_extraction_methods():
             extraction_method="openai",
             vision_model="llava:7b",
             openai_api_key=openai_api_key,
-            openai_model="gpt-4-vision-preview",
+            openai_model="gpt-4o",
         )
 
         print("   i️ Using OpenAI API for extraction")
         print("   Demo shows configuration and workflow")
         print("⚙️ OpenAI method configuration ready")
         print("   Agents: DocumentCollector (OpenAI) → Translator → FormAnalyst → FormFiller")
-        print("   OpenAI Model: gpt-4-vision-preview")
+        print("   OpenAI Model: gpt-4o")
     else:
         print("   ⚠️ OpenAI extraction requires API key")
         print("   To test, set OPENAI_API_KEY environment variable")
@@ -433,7 +433,7 @@ def demo_crewai_configuration():
             "name": "Cloud-Powered",
             "text_model": "llama3.2:3b",
             "extraction_method": "openai",
-            "openai_model": "gpt-4-vision-preview",
+            "openai_model": "gpt-4o",
             "description": "Maximum accuracy using OpenAI's vision API",
         },
     ]

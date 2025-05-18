@@ -19,7 +19,7 @@ def create_document_collector_agent(
     extraction_method: str = "traditional",
     vision_model: str = "llava:7b",
     openai_api_key: str | None = None,
-    openai_model: str = "gpt-4-vision-preview",
+    openai_model: str = "gpt-4o",
 ) -> Agent:
     """Create the document collection agent.
 

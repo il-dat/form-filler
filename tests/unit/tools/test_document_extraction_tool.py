@@ -53,7 +53,7 @@ def test_init_traditional():
     assert tool.vision_model == "llava:7b"
     assert tool._ollama_llm is None
     assert tool.openai_api_key is None
-    assert tool.openai_model == "gpt-4-vision-preview"
+    assert tool.openai_model == "gpt-4o"
 
 
 @patch("form_filler.tools.document_extraction_tool.OllamaLLM")
@@ -176,7 +176,7 @@ def test_pdf_openai_extraction(mock_exists):
         tool = DocumentExtractionTool(
             extraction_method="openai",
             openai_api_key="test-api-key",
-            openai_model="gpt-4-vision-preview",
+            openai_model="gpt-4o",
         )
 
         result = tool._run("/path/to/file.pdf")
@@ -220,7 +220,7 @@ def test_image_openai_extraction(mock_exists):
         tool = DocumentExtractionTool(
             extraction_method="openai",
             openai_api_key="test-api-key",
-            openai_model="gpt-4-vision-preview",
+            openai_model="gpt-4o",
         )
 
         result = tool._run("/path/to/file.jpg")
@@ -296,7 +296,7 @@ def test_image_openai_extraction_fallback(mock_exists, sample_image_content):
         tool = DocumentExtractionTool(
             extraction_method="openai",
             openai_api_key="test-api-key",
-            openai_model="gpt-4-vision-preview",
+            openai_model="gpt-4o",
         )
 
         # Override the _run method to call our patched methods
@@ -378,7 +378,7 @@ def test_pdf_openai_extraction_fallback(mock_exists, sample_pdf_content):
         tool = DocumentExtractionTool(
             extraction_method="openai",
             openai_api_key="test-api-key",
-            openai_model="gpt-4-vision-preview",
+            openai_model="gpt-4o",
         )
 
         # Override the _run method to call our patched methods

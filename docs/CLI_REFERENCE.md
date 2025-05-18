@@ -31,11 +31,16 @@ form-filler [COMMAND] [OPTIONS]
 
 ## Global Options
 
-| Option          | Description                                      |
-|-----------------|--------------------------------------------------|
-| `--version`     | Display version information and exit.            |
-| `--help`        | Display help text for the command.               |
-| `--verbose`     | Enable verbose output for detailed logging.      |
+| Option                 | Description                                      |
+|-----------------------|--------------------------------------------------|
+| `--version`            | Display version information and exit.            |
+| `--help`               | Display help text for the command.               |
+| `--verbose`, `-v`      | Enable verbose output for detailed logging.      |
+| `--model`, `-m`        | Ollama model to use for translation and form filling (default: llama3.2:3b) |
+| `--extraction-method`, `-e` | Text extraction method: traditional, ai, or openai (default: traditional) |
+| `--vision-model`, `-vm` | Vision model for AI extraction (default: llava:7b) |
+| `--openai-api-key`     | OpenAI API key for OpenAI extraction method      |
+| `--openai-model`       | OpenAI model for OpenAI extraction method        |
 
 All commands display a progress bar or spinner while they are executing, providing visual feedback during long-running operations.
 
@@ -60,14 +65,11 @@ form-filler process [OPTIONS] [INPUT_FILE] [FORM_FILE] [OUTPUT_FILE]
 #### Examples:
 
 ```bash
-# Process a document using default Ollama model
-form-filler process scan.pdf form.docx output.docx
+# Using local AI extraction with Ollama:
+form-filler -e ai -vm llava:7b process document.pdf form.docx output.docx
 
-# Process with translation
-form-filler process vietnamese_doc.png form.docx output.docx --translate
-
-# Process using OpenAI models
-form-filler process scan.pdf form.docx output.docx --openai
+# Using OpenAI API:
+form-filler -e openai --openai-api-key YOUR_API_KEY process document.pdf form.docx output.docx
 ```
 
 ### `extract`
@@ -90,14 +92,11 @@ form-filler extract [OPTIONS] [INPUT_FILE]
 #### Examples:
 
 ```bash
-# Extract text from a PDF
-form-filler extract document.pdf
+# Using local AI extraction with Ollama:
+form-filler -e ai -vm llava:7b extract document.pdf
 
-# Extract with specific method and save to file
-form-filler extract receipt.png --method ai --output extracted.txt
-
-# Extract using OpenAI
-form-filler extract document.pdf --openai
+# Using OpenAI API:
+form-filler -e openai --openai-api-key YOUR_API_KEY extract document.pdf
 ```
 
 ### `translate`
@@ -119,14 +118,11 @@ form-filler translate [OPTIONS] [INPUT_TEXT_OR_FILE]
 #### Examples:
 
 ```bash
-# Translate a piece of text
-form-filler translate "Xin chào từ Việt Nam"
+# Basic usage:
+form-filler translate "Xin chào"
 
-# Translate content from a file
-form-filler translate vietnamese_text.txt --file
-
-# Translate to a specific file
-form-filler translate input.txt --file --output translated.txt
+# Using specific model:
+form-filler -m gemma:2b translate "Xin chào từ Việt Nam"
 ```
 
 ### `analyze`
@@ -182,12 +178,41 @@ form-filler fill form.docx content.txt filled.docx --from-file
 form-filler fill form.docx content.txt filled.docx --from-file --mappings mappings.json
 ```
 
+## Check Ollama Server Status
+
+You can verify your Ollama server status using the `check-ollama` command:
+
+```bash
+form-filler check-ollama [OPTIONS]
+```
+
+#### Options:
+
+| Option           | Description                                    |
+|------------------|------------------------------------------------|
+| `--host`         | Ollama host (default: localhost)               |
+| `--port`         | Ollama port (default: 11434)                   |
+| `--check-vision` | Also check for vision models                   |
+
+#### Examples:
+
+```bash
+# Basic check for Ollama:
+form-filler check-ollama
+
+# Check for vision models too:
+form-filler check-ollama --check-vision
+
+# Connect to remote Ollama:
+form-filler check-ollama --host remote-server --port 11434
+```
+
 ## Batch Processing
 
 For batch processing multiple documents, use the `batch` subcommand:
 
 ```bash
-form-filler batch [OPTIONS] [BATCH_CONFIG_FILE]
+form-filler-batch [OPTIONS] [BATCH_CONFIG_FILE]
 ```
 
 #### Options:
