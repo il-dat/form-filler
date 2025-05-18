@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 logger = logging.getLogger(__name__)
 
 
-def block_telemetry():
+def block_telemetry(is_help_command=False):
     """
     Block telemetry by patching network modules and setting environment variables.
 
@@ -21,6 +21,10 @@ def block_telemetry():
     1. Sets environment variables to disable tracking
     2. Patches urllib3, requests, aiohttp to block connections to telemetry endpoints
     3. Patches specific modules in CrewAI and LangChain that handle telemetry
+    4. Prevents LiteLLM from fetching model cost map on import
+
+    Args:
+        is_help_command: Whether this is a help/version/non-functional command
     """
     # Set environment variables
     os.environ["CREWAI_DO_NOT_TRACK"] = "true"
@@ -39,6 +43,7 @@ def block_telemetry():
         "api.mixpanel.com",
         "api.amplitude.com",
         "telemetry.langchain.com",
+        "raw.githubusercontent.com",  # Block LiteLLM model cost map fetch
     ]
 
     # Patch urllib3 connection
@@ -146,6 +151,44 @@ def block_telemetry():
         logger.info("Patched LangChain tracer")
     except (ImportError, AttributeError):
         logger.debug("LangChain tracer not found, skipping patch")
+
+    # Patch LiteLLM's model cost map functionality to prevent network requests
+    try:
+        # First try to patch at import time
+        import sys
+
+        if "litellm" in sys.modules:
+            # LiteLLM is already imported, patch it directly
+            import litellm
+
+            # Create an empty model cost map to avoid network requests
+            empty_cost_map = {}
+            # Override the get_model_cost_map function
+            original_get_model_cost_map = (
+                litellm.litellm_core_utils.get_model_cost_map.get_model_cost_map
+            )
+
+            def patched_get_model_cost_map(*args, **kwargs):
+                # If this is a help command or we explicitly set is_help_command=True,
+                # return an empty cost map to avoid network requests
+                if is_help_command:
+                    logger.debug("Returning empty cost map for LiteLLM to avoid network request")
+                    return {}
+                return original_get_model_cost_map(*args, **kwargs)
+
+            # Apply the patch
+            litellm.litellm_core_utils.get_model_cost_map.get_model_cost_map = (
+                patched_get_model_cost_map
+            )
+            # Also set the model_cost_map_url to an empty string to prevent any attempts
+            litellm.model_cost_map_url = ""
+            logger.info("Patched LiteLLM's model cost map functionality")
+        else:
+            # LiteLLM is not imported yet, set environment variables to disable features
+            os.environ["LITELLM_TELEMETRY"] = "false"
+            logger.info("Set environment variables to disable LiteLLM telemetry")
+    except (ImportError, AttributeError) as e:
+        logger.debug(f"LiteLLM not found or could not be patched: {e}")
 
     logger.info("Telemetry blocking enabled for privacy protection")
     return patched_functions
