@@ -75,9 +75,8 @@ def demo_crewai_single_document():
     # Create temporary files for source document as PDF
     import fitz  # PyMuPDF
 
-    temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    source_path = temp_pdf.name
-    temp_pdf.close()
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+        source_path = temp_pdf.name
     doc = fitz.open()
     page = doc.new_page()
 
@@ -136,15 +135,13 @@ def demo_crewai_single_document():
     doc.add_paragraph("___________________________________________")
 
     # Save the document
-    temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    form_path = temp_docx.name
-    temp_docx.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_docx:
+        form_path = temp_docx.name
     doc.save(form_path)
 
     # Create temporary output file
-    temp_output = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    output_path = temp_output.name
-    temp_output.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_output:
+        output_path = temp_output.name
 
     # Initialize CrewAI processor
     print("🤖 Initializing CrewAI crew...")
@@ -221,9 +218,8 @@ def demo_crewai_agent_capabilities():
     from form_filler.tools.form_filling_tool import FormFillingTool
     from form_filler.tools.translation_tool import TranslationTool
 
-    temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    temp_path = temp_pdf.name
-    temp_pdf.close()
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+        temp_path = temp_pdf.name
     doc = fitz.open()
     page = doc.new_page()
     # Use a Unicode-compatible font for Vietnamese with proper line breaks
@@ -264,9 +260,8 @@ def demo_crewai_agent_capabilities():
     doc.add_heading("Skills:", 1)
     doc.add_paragraph("Programming Languages: ___________________")
 
-    temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    form_path = temp_docx.name
-    temp_docx.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_docx:
+        form_path = temp_docx.name
     doc.save(form_path)
 
     form_analyzer = FormAnalysisTool()
@@ -275,9 +270,8 @@ def demo_crewai_agent_capabilities():
     print("📝 Found form fields in structure")
 
     print("\n🔧 CrewAI Tool 4: FormFillingTool")
-    temp_output = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    output_path = temp_output.name
-    temp_output.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_output:
+        output_path = temp_output.name
     form_filler = FormFillingTool(model="llama3.2:3b")
     filling_result = form_filler._run(form_path, english_text, output_path)
     print("✅ Form filling completed by CrewAI agent")
@@ -453,9 +447,8 @@ def demo_crewai_extraction_methods():
     # Create sample document as PDF
     import fitz  # PyMuPDF
 
-    temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    temp_path = temp_pdf.name
-    temp_pdf.close()
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+        temp_path = temp_pdf.name
     doc = fitz.open()
     page = doc.new_page()
     # Use a Unicode-compatible font for Vietnamese with proper line breaks
@@ -484,9 +477,8 @@ def demo_crewai_extraction_methods():
     doc.add_heading("Skills:", 1)
     doc.add_paragraph("Programming Languages: ___________________")
 
-    temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    form_path = temp_docx.name
-    temp_docx.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_docx:
+        form_path = temp_docx.name
     doc.save(form_path)
 
     # Test Traditional Method
@@ -497,9 +489,8 @@ def demo_crewai_extraction_methods():
         vision_model="llava:7b",
     )
 
-    temp_output_trad = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    output_traditional = temp_output_trad.name
-    temp_output_trad.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_output_trad:
+        output_traditional = temp_output_trad.name
 
     start_time = time.time()
     result_traditional = traditional_crew.process_document(
@@ -825,9 +816,8 @@ async def demo_single_document():
     # Source as PDF
     import fitz  # PyMuPDF
 
-    temp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    source_path = temp_pdf.name
-    temp_pdf.close()
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+        source_path = temp_pdf.name
     doc = fitz.open()
     page = doc.new_page()
     # Use a Unicode-compatible font for Vietnamese with proper line breaks
@@ -847,17 +837,15 @@ async def demo_single_document():
     # Form as DOCX
     from docx import Document
 
-    temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    form_path = temp_docx.name
-    temp_docx.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_docx:
+        form_path = temp_docx.name
     doc = Document()
     doc.add_paragraph(SAMPLE_FORM_CONTENT)
     doc.save(form_path)
 
     # Output path
-    temp_output = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    output_path = temp_output.name
-    temp_output.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_output:
+        output_path = temp_output.name
 
     # Initialize processor
     processor = DocumentProcessingCrew(text_model="llama3.2:3b")
@@ -1003,9 +991,8 @@ async def demo_error_handling():
     # Create empty PDF
     import fitz  # PyMuPDF
 
-    temp_empty_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    empty_path = temp_empty_pdf.name
-    temp_empty_pdf.close()
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_empty_pdf:
+        empty_path = temp_empty_pdf.name
     pdf_doc = fitz.open()
     pdf_doc.new_page()  # Empty page
     pdf_doc.save(empty_path)
@@ -1014,17 +1001,15 @@ async def demo_error_handling():
     # Create form in DOCX format
     from docx import Document
 
-    temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    form_path = temp_docx.name
-    temp_docx.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_docx:
+        form_path = temp_docx.name
     doc = Document()
     doc.add_paragraph(SAMPLE_FORM_CONTENT)
     doc.save(form_path)
 
     # Create output path
-    temp_output = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-    output_path = temp_output.name
-    temp_output.close()
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_output:
+        output_path = temp_output.name
 
     result = await processor.process_document(empty_path, form_path, output_path)
     print(f"Result: {'✅ Handled' if not result.success else '❌ Unexpected success'}")
