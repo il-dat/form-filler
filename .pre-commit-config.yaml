@@ -48,3 +48,14 @@ repos:
       - id: bandit
         args: ['-c', 'pyproject.toml']
         additional_dependencies: ['bandit[toml]']
+
+  # Custom full-lint script (runs all linting checks at once)
+  - repo: local
+    hooks:
+      - id: full-lint
+        name: Full Lint
+        description: Runs all linting checks (ruff, ruff-format, bandit)
+        entry: scripts/full-lint.sh
+        language: script
+        pass_filenames: false
+        types: [python]

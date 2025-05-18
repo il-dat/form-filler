@@ -252,9 +252,14 @@ ruff-format = "ruff format ."
 [tool.poe.tasks.full-lint]
 sequence = [
     { cmd = "ruff check src tests" },
-    { cmd = "ruff format --check ." }
+    { cmd = "ruff format --check ." },
+    { cmd = "bandit -c pyproject.toml -r src/" }
 ]
 help = "Run full linting suite without modifying files"
+
+[tool.poe.tasks.run-lint]
+cmd = "./scripts/run_lint.sh"
+help = "Run the full-lint script with all checks"
 
 [tool.poe.tasks.fix-all]
 sequence = [

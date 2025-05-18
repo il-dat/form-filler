@@ -346,6 +346,8 @@ poe test          # Run tests
 poe test-cov      # Run tests with coverage report
 poe ruff-check    # Check code with ruff linter
 poe ruff-fix      # Fix code with ruff linter
+poe full-lint     # Run all linting checks
+poe run-lint      # Run comprehensive linting script
 poe run-demo      # Run the CrewAI demo
 poe run-web       # Launch the web interface
 poe serve         # Same as run-web
@@ -385,7 +387,10 @@ poe install-hooks
 - **no-commit-to-branch**: Prevents direct commits to main/master branches
 - **gitleaks**: Advanced secret detection to prevent credentials from being committed
 - **detect-aws-credentials**: Specific check for AWS credentials in code
+- **ruff**: Python linting with error checking and auto-fixes
+- **ruff-format**: Python code formatting
 - **bandit**: Python security checks for common vulnerabilities
+- **full-lint**: Comprehensive linting (runs all checks at once)
 
 #### Using Pre-commit Hooks
 
@@ -397,6 +402,11 @@ poe install-hooks
 Run hooks manually:
 ```bash
 pre-commit run --all-files
+```
+
+Run full linting separately:
+```bash
+./scripts/run_lint.sh
 ```
 
 Bypass hooks (not recommended):
