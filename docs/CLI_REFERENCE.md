@@ -75,7 +75,6 @@ form-filler process [OPTIONS] [INPUT_FILE] [FORM_FILE] [OUTPUT_FILE]
 | `--provider`     | AI provider to use (default: "ollama").                |
 | `--api-key`      | API key for the AI provider (if needed).               |
 | `--api-base`     | Base URL for the AI provider API (if custom).          |
-| `--openai`       | Use OpenAI models instead of local Ollama (legacy).    |
 | `--translate`    | Translate the input document if it's in Vietnamese.    |
 
 #### Examples:
@@ -87,8 +86,8 @@ form-filler process scan.pdf form.docx output.docx
 # Process with translation
 form-filler process vietnamese_doc.png form.docx output.docx --translate
 
-# Process using OpenAI models (legacy method)
-form-filler process scan.pdf form.docx output.docx --openai
+# Process using OpenAI models
+form-filler process scan.pdf form.docx output.docx --provider openai --api-key your_api_key --model gpt-4
 
 # Process using Anthropic Claude
 form-filler process scan.pdf form.docx output.docx --provider anthropic --api-key your_api_key --model claude-3-opus-20240229
@@ -113,7 +112,6 @@ form-filler extract [OPTIONS] [INPUT_FILE]
 | `--provider`     | AI provider to use (default: "ollama").                |
 | `--api-key`      | API key for the AI provider (if needed).               |
 | `--api-base`     | Base URL for the AI provider API (if custom).          |
-| `--openai`       | Use OpenAI models instead of local Ollama (legacy).    |
 | `--method`       | Extraction method: "traditional", "ai", or "auto" (default).  |
 | `--output`       | Output file to save the extracted text (optional).     |
 
@@ -126,8 +124,8 @@ form-filler extract document.pdf
 # Extract with specific method and save to file
 form-filler extract receipt.png --method ai --output extracted.txt
 
-# Extract using OpenAI (legacy method)
-form-filler extract document.pdf --openai
+# Extract using OpenAI
+form-filler extract document.pdf --provider openai --api-key your_api_key --model gpt-4-vision-preview
 
 # Extract using DeepSeek
 form-filler extract document.pdf --provider deepseek --api-key your_api_key --model deepseek-vision-large
@@ -243,7 +241,6 @@ form-filler batch [OPTIONS] [BATCH_CONFIG_FILE]
 | `--provider`     | AI provider to use (default: "ollama").                |
 | `--api-key`      | API key for the AI provider (if needed).               |
 | `--api-base`     | Base URL for the AI provider API (if custom).          |
-| `--openai`       | Use OpenAI models instead of local Ollama (legacy).    |
 | `--output-dir`   | Directory to save output files (default: current dir). |
 
 #### Batch Configuration Format:
@@ -279,8 +276,8 @@ You can specify AI provider settings for each job individually, or use the comma
 # Process a batch of documents
 form-filler batch batch_config.json
 
-# Process with OpenAI models (legacy method)
-form-filler batch batch_config.json --openai --output-dir ./processed
+# Process with OpenAI models
+form-filler batch batch_config.json --provider openai --api-key your_api_key --model gpt-4 --output-dir ./processed
 
 # Process with DeepSeek models
 form-filler batch batch_config.json --provider deepseek --api-key your_api_key --model deepseek-chat-v2 --output-dir ./processed
@@ -299,7 +296,6 @@ The following environment variables can be used to configure the Form Filler CLI
 | `FORM_FILLER_PROVIDER`  | Default AI provider to use.                       |
 | `FORM_FILLER_API_KEY`   | API key for the configured AI provider.           |
 | `FORM_FILLER_API_BASE`  | Base URL for the AI provider's API.               |
-| `FORM_FILLER_OPENAI_KEY`| OpenAI API key (legacy, use FORM_FILLER_API_KEY). |
 | `FORM_FILLER_LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR).      |
 | `FORM_FILLER_OLLAMA_URL`| URL for Ollama API (default: http://localhost:11434). |
 
