@@ -39,6 +39,42 @@ def check_ollama(host: str, port: int, check_vision: bool) -> None:
     asyncio.run(async_check_ollama(host, port, check_vision))
 
 
+@cli.command()
+@click.option("--debug", is_flag=True, help="Enable debug logging for network requests")
+def block_telemetry(debug: bool) -> None:
+    """Block telemetry and tracking completely.
+
+    Uses advanced techniques to prevent CrewAI and LangChain from sending
+    telemetry data by patching network functions and API endpoints.
+
+    Examples:
+    # Block telemetry (standard mode):
+    form-filler block-telemetry
+
+    # Block telemetry with debug logging:
+    form-filler block-telemetry --debug
+    """
+    import logging
+
+    from form_filler.utils import block_telemetry as blocker
+
+    if debug:
+        logging.getLogger("urllib3.connectionpool").setLevel(logging.DEBUG)
+        logging.getLogger("form_filler.utils.telemetry_blocker").setLevel(logging.DEBUG)
+
+    # Apply telemetry blocking
+    blocker()
+
+    print("✅ Telemetry blocking is now active")
+    print("   - All network requests to telemetry endpoints will be blocked")
+    print("   - Environment variables have been set to opt out of tracking")
+    print("   - This setting is active for the current session only")
+    print("\nTo make this permanent, add to your shell profile (~/.bashrc, ~/.zshrc):")
+    print('export CREWAI_DO_NOT_TRACK="true"')
+    print('export LANGCHAIN_TRACING_V2="false"')
+    print('export LANGCHAIN_TRACKING="false"')
+
+
 def main() -> None:
     """Main entry point for the CLI."""
     import os

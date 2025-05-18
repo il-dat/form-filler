@@ -23,6 +23,7 @@
 - **100% Local Processing**: No cloud dependencies
 - **No API Keys Required**: Uses local Ollama models
 - **Secure**: All processing happens on your machine
+- **No Telemetry**: Built-in tracking blocker prevents any data collection
 
 ## 🚀 Quick Start
 

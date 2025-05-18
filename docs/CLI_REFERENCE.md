@@ -13,6 +13,7 @@ This document provides a complete reference for using the Form Filler command li
   - [translate](#translate)
   - [analyze](#analyze)
   - [fill](#fill)
+  - [block-telemetry](#block-telemetry)
 - [Batch Processing](#batch-processing)
 - [Environment Variables](#environment-variables)
 - [Return Codes](#return-codes)
@@ -207,6 +208,44 @@ form-filler check-ollama --check-vision
 form-filler check-ollama --host remote-server --port 11434
 ```
 
+### `block-telemetry`
+
+Block telemetry and tracking completely to enhance privacy protection.
+
+```bash
+form-filler block-telemetry [OPTIONS]
+```
+
+#### Options:
+
+| Option           | Description                                    |
+|------------------|------------------------------------------------|
+| `--debug`        | Enable debug logging for network requests      |
+
+#### Examples:
+
+```bash
+# Block telemetry (standard mode):
+form-filler block-telemetry
+
+# Block telemetry with debug logging:
+form-filler block-telemetry --debug
+```
+
+This command uses advanced techniques to prevent CrewAI and LangChain from sending telemetry data by patching network functions and endpoints. When activated, it:
+
+- Sets environment variables to opt out of tracking
+- Blocks all network requests to telemetry servers
+- Patches internal telemetry functions
+
+The blocking is active for the current session only. For permanent configuration, add the following environment variables to your shell profile:
+
+```bash
+export CREWAI_DO_NOT_TRACK="true"
+export LANGCHAIN_TRACING_V2="false"
+export LANGCHAIN_TRACKING="false"
+```
+
 ## Batch Processing
 
 For batch processing multiple documents, use the `batch` subcommand:
@@ -263,6 +302,9 @@ The following environment variables can be used to configure the Form Filler CLI
 | `FORM_FILLER_OPENAI_KEY`| OpenAI API key for OpenAI model usage.            |
 | `FORM_FILLER_LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR).      |
 | `FORM_FILLER_OLLAMA_URL`| URL for Ollama API (default: http://localhost:11434). |
+| `CREWAI_DO_NOT_TRACK`   | Set to "true" to disable CrewAI telemetry.        |
+| `LANGCHAIN_TRACING_V2`  | Set to "false" to disable LangChain tracing.      |
+| `LANGCHAIN_TRACKING`    | Set to "false" to disable LangChain tracking.     |
 
 ## Return Codes
 
