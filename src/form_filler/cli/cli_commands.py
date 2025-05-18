@@ -14,6 +14,7 @@ import aiohttp
 import click
 from rich.console import Console
 
+from form_filler.ai_providers import AIProvider
 from form_filler.crew import DocumentProcessingCrew
 from form_filler.tools import DocumentExtractionTool, TranslationTool
 from form_filler.utils.progress_utils import create_indeterminate_spinner
@@ -48,28 +49,38 @@ def show_version(ctx: click.Context, param: click.Parameter, value: bool) -> Non
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 @click.option(
-    "--model",
+    "--provider",
+    "-p",
+    default="ollama",
+    help="AI provider to use (ollama, openai, anthropic, deepseek, gemini)",
+)
+@click.option(
+    "--text-model",
     "-m",
     default="llama3.2:3b",
-    help="Ollama model to use for translation and form filling",
+    help="Model to use for text processing (translation, form filling)",
 )
 @click.option(
     "--extraction-method",
     "-e",
-    type=click.Choice(["traditional", "ai", "openai"]),
+    type=click.Choice(["traditional", "ai"]),
     default="traditional",
-    help="Text extraction method: traditional (PyMuPDF/Tesseract), ai (local vision models), or openai (OpenAI API)",
-)
-@click.option("--vision-model", "-vm", default="llava:7b", help="Vision model for AI extraction")
-@click.option(
-    "--openai-api-key",
-    envvar="OPENAI_API_KEY",
-    help="OpenAI API key for OpenAI extraction method",
+    help="Text extraction method: traditional (PyMuPDF/Tesseract) or ai (vision models)",
 )
 @click.option(
-    "--openai-model",
-    default="gpt-4o",
-    help="OpenAI model for OpenAI extraction method (supports vision)",
+    "--vision-model",
+    "-vm",
+    default="llava:7b",
+    help="Vision model for AI extraction",
+)
+@click.option(
+    "--api-key",
+    envvar="AI_API_KEY",
+    help="API key for the AI provider (if needed)",
+)
+@click.option(
+    "--api-base",
+    help="Base URL for the AI provider API (if needed)",
 )
 @click.option(
     "--version",
@@ -83,32 +94,43 @@ def show_version(ctx: click.Context, param: click.Parameter, value: bool) -> Non
 def cli(
     ctx: click.Context,
     verbose: bool,
-    model: str,
+    provider: str,
+    text_model: str,
     extraction_method: str,
     vision_model: str,
-    openai_api_key: str | None,
-    openai_model: str,
+    api_key: str | None,
+    api_base: str | None,
 ) -> None:
     """Vietnamese to English Document Form Filler (CrewAI Edition).
 
     A CrewAI-based multi-agent system for processing Vietnamese documents (PDF/images)
-    and filling English DOCX forms using local Ollama LLMs.
+    and filling English DOCX forms using various AI providers.
 
     All commands display progress bars or spinners during execution to provide
     visual feedback for long-running operations.
 
     Extraction Methods:
     - traditional: Use PyMuPDF for PDFs and Tesseract for images
-    - ai: Use local vision models for both PDFs and images (requires vision-capable models)
-    - openai: Use OpenAI Vision API for both PDFs and images (requires API key)
+    - ai: Use vision models for both PDFs and images (requires vision-capable models)
+
+    Supported AI Providers:
+    - ollama: Local Ollama models (default, no API key required)
+    - openai: OpenAI API (requires API key)
+    - anthropic: Anthropic Claude API (requires API key)
+    - deepseek: DeepSeek API (requires API key)
+    - gemini: Google Gemini API (requires API key)
+
+    Note: For providers that require API keys, you can set the API_KEY environment
+    variable instead of passing it as a command-line option.
     """
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
-    ctx.obj["model"] = model
+    ctx.obj["provider"] = provider
+    ctx.obj["text_model"] = text_model
     ctx.obj["extraction_method"] = extraction_method
     ctx.obj["vision_model"] = vision_model
-    ctx.obj["openai_api_key"] = openai_api_key
-    ctx.obj["openai_model"] = openai_model
+    ctx.obj["api_key"] = api_key
+    ctx.obj["api_base"] = api_base
 
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -118,27 +140,29 @@ def cli(
 @click.argument("source", type=click.Path(exists=True))
 @click.argument("form", type=click.Path(exists=True))
 @click.argument("output", type=click.Path())
-@click.option("--model", "-m", help="Override default Ollama model")
+@click.option("--provider", "-p", help="Override default AI provider")
+@click.option("--text-model", "-m", help="Override default text model")
 @click.option(
     "--extraction-method",
     "-e",
-    type=click.Choice(["traditional", "ai", "openai"]),
+    type=click.Choice(["traditional", "ai"]),
     help="Override default extraction method",
 )
 @click.option("--vision-model", "-vm", help="Override default vision model")
-@click.option("--openai-api-key", help="OpenAI API key for OpenAI extraction method")
-@click.option("--openai-model", help="OpenAI model for OpenAI extraction method")
+@click.option("--api-key", help="Override default API key")
+@click.option("--api-base", help="Override default API base URL")
 @click.pass_context
 def process(
     ctx: click.Context,
     source: str | Path,
     form: str | Path,
     output: str | Path,
-    model: str | None,
+    provider: str | None,
+    text_model: str | None,
     extraction_method: str | None,
     vision_model: str | None,
-    openai_api_key: str | None,
-    openai_model: str | None,
+    api_key: str | None,
+    api_base: str | None,
 ) -> None:
     """Process a Vietnamese document and fill an English DOCX form using CrewAI.
 
@@ -151,13 +175,17 @@ def process(
     form-filler -e ai -vm llava:7b process document.pdf form.docx output.docx
 
     # Using OpenAI API:
-    form-filler -e openai --openai-api-key YOUR_API_KEY process document.pdf form.docx output.docx
+    form-filler -p openai -m gpt-4 -e ai -vm gpt-4-vision-preview --api-key YOUR_API_KEY process document.pdf form.docx output.docx
+
+    # Using Anthropic Claude:
+    form-filler -p anthropic -m claude-3-sonnet-20240229 --api-key YOUR_API_KEY process document.pdf form.docx output.docx
     """
-    model = model or ctx.obj["model"]
+    provider = provider or ctx.obj["provider"]
+    text_model = text_model or ctx.obj["text_model"]
     extraction_method = extraction_method or ctx.obj["extraction_method"]
     vision_model = vision_model or ctx.obj["vision_model"]
-    openai_api_key = openai_api_key or ctx.obj["openai_api_key"]
-    openai_model = openai_model or ctx.obj["openai_model"]
+    api_key = api_key or ctx.obj["api_key"]
+    api_base = api_base or ctx.obj["api_base"]
 
     # Ensure output directory exists
     output_path = Path(output)
@@ -165,11 +193,12 @@ def process(
 
     # Create CrewAI processor
     crew_processor = DocumentProcessingCrew(
-        text_model=model,
         extraction_method=extraction_method,
+        provider_name=provider,
+        text_model=text_model,
         vision_model=vision_model,
-        openai_api_key=openai_api_key,
-        openai_model=openai_model,
+        api_key=api_key,
+        api_base=api_base,
     )
 
     # Process the document with progress bar
@@ -193,6 +222,9 @@ def process(
         console.print(f"Filled form saved to: [blue]{output}[/blue]")
         if result.metadata:
             console.print(
+                f"Provider: [yellow]{result.metadata.get('provider_name', 'N/A')}[/yellow]",
+            )
+            console.print(
                 f"Extraction method: [yellow]{result.metadata.get('extraction_method', 'N/A')}[/yellow]",
             )
             console.print(
@@ -201,10 +233,6 @@ def process(
             if result.metadata.get("vision_model"):
                 console.print(
                     f"Vision model: [yellow]{result.metadata.get('vision_model')}[/yellow]",
-                )
-            if result.metadata.get("openai_model") and extraction_method == "openai":
-                console.print(
-                    f"OpenAI model: [yellow]{result.metadata.get('openai_model')}[/yellow]",
                 )
         if result.data and isinstance(result.data, dict):
             fields_filled = result.data.get("fields_filled", "N/A")
@@ -216,53 +244,54 @@ def process(
 
 @cli.command()
 @click.argument("file_path", type=click.Path(exists=True))
+@click.option("--provider", "-p", help="Override default AI provider")
 @click.option(
     "--extraction-method",
     "-e",
-    type=click.Choice(["traditional", "ai", "openai"]),
+    type=click.Choice(["traditional", "ai"]),
     help="Override default extraction method",
 )
-@click.option("--vision-model", "-vm", help="Vision model for AI extraction")
-@click.option("--openai-api-key", help="OpenAI API key for OpenAI extraction method")
-@click.option("--openai-model", help="OpenAI model for OpenAI extraction method")
+@click.option("--vision-model", "-vm", help="Override default vision model")
+@click.option("--api-key", help="Override default API key")
+@click.option("--api-base", help="Override default API base URL")
 @click.pass_context
 def extract(
     ctx: click.Context,
     file_path: str | Path,
+    provider: str | None,
     extraction_method: str | None,
     vision_model: str | None,
-    openai_api_key: str | None,
-    openai_model: str | None,
+    api_key: str | None,
+    api_base: str | None,
 ) -> None:
     """Extract text from a Vietnamese document (for testing).
-
-    FILE_PATH: Path to Vietnamese document (PDF or image)
 
     Examples:
     # Using local AI extraction with Ollama:
     form-filler -e ai -vm llava:7b extract document.pdf
 
-    # Using OpenAI API:
-    form-filler -e openai --openai-api-key YOUR_API_KEY extract document.pdf
+    # Using OpenAI API for extraction:
+    form-filler -p openai -e ai -vm gpt-4-vision-preview --api-key YOUR_API_KEY extract document.pdf
     """
+    provider = provider or ctx.obj["provider"]
     extraction_method = extraction_method or ctx.obj["extraction_method"]
     vision_model = vision_model or ctx.obj["vision_model"]
+    api_key = api_key or ctx.obj["api_key"]
+    api_base = api_base or ctx.obj["api_base"]
 
-    # Create extraction tool with the appropriate parameters
-    openai_api_key = openai_api_key or ctx.obj["openai_api_key"]
-    openai_model = openai_model or ctx.obj["openai_model"]
-
-    # Create extraction tool
+    # Create extraction tool with the new API
     extractor = DocumentExtractionTool(
         extraction_method=extraction_method,
-        vision_model=vision_model,
-        openai_api_key=openai_api_key,
-        openai_model=openai_model,
+        provider_name=provider,
+        model_name=vision_model,
+        api_key=api_key,
+        api_base=api_base,
     )
 
     try:
         console.print(f"Extracting text using [yellow]{extraction_method}[/yellow] method...")
         if extraction_method == "ai":
+            console.print(f"Provider: [yellow]{provider}[/yellow]")
             console.print(f"Vision model: [yellow]{vision_model}[/yellow]")
 
         # Add progress spinner during extraction
@@ -291,26 +320,44 @@ def extract(
 
 @cli.command()
 @click.argument("vietnamese_text")
-@click.option("--model", "-m", help="Override default model")
+@click.option("--provider", "-p", help="Override default AI provider")
+@click.option("--model", "-m", help="Override default text model")
+@click.option("--api-key", help="Override default API key")
+@click.option("--api-base", help="Override default API base URL")
 @click.pass_context
-def translate(ctx: click.Context, vietnamese_text: str, model: str | None) -> None:
+def translate(
+    ctx: click.Context,
+    vietnamese_text: str,
+    provider: str | None,
+    model: str | None,
+    api_key: str | None,
+    api_base: str | None,
+) -> None:
     """Translate Vietnamese text to English (for testing).
 
-    VIETNAMESE_TEXT: Text to translate from Vietnamese to English
-
     Examples:
-    # Basic usage:
+    # Using local Ollama:
     form-filler translate "Xin chào"
 
-    # Using specific model:
-    form-filler -m gemma:2b translate "Xin chào từ Việt Nam"
+    # Using OpenAI:
+    form-filler -p openai -m gpt-4 --api-key YOUR_API_KEY translate "Xin chào"
     """
-    model = model or ctx.obj["model"]
+    provider = provider or ctx.obj["provider"]
+    model = model or ctx.obj["text_model"]
+    api_key = api_key or ctx.obj["api_key"]
+    api_base = api_base or ctx.obj["api_base"]
 
-    translator = TranslationTool(model=model)
+    translator = TranslationTool(
+        provider_name=provider,
+        model_name=model,
+        api_key=api_key,
+        api_base=api_base,
+    )
 
     try:
-        console.print(f"Translating with model: [yellow]{model}[/yellow]")
+        console.print(
+            f"Translating with provider: [yellow]{provider}[/yellow], model: [yellow]{model}[/yellow]"
+        )
 
         # Add progress spinner during translation
         with create_indeterminate_spinner("Translating text...") as progress:
@@ -333,14 +380,12 @@ def translate(ctx: click.Context, vietnamese_text: str, model: str | None) -> No
         sys.exit(1)
 
 
+@cli.command()
+@click.option("--host", default="localhost", help="Ollama host")
+@click.option("--port", default=11434, help="Ollama port")
+@click.option("--check-vision", is_flag=True, help="Also check for vision models")
 async def check_ollama(host: str, port: int, check_vision: bool) -> None:
-    """Check if Ollama is running and list available models.
-
-    Args:
-        host: Hostname of the Ollama server
-        port: Port number of the Ollama server
-        check_vision: Whether to also check for vision models
-    """
+    """Check if Ollama is running and list available models."""
     url = f"http://{host}:{port}/api/tags"
 
     try:
@@ -387,9 +432,8 @@ async def check_ollama(host: str, port: int, check_vision: bool) -> None:
                         click.echo("  Supported models: llava:7b, llava:13b, bakllava")
 
                 click.echo("\n🤖 CrewAI Integration Status: ✅ Ready")
-                click.echo("Available extraction methods: traditional, ai, openai")
-                click.echo("\n💡 Note: OpenAI extraction requires an API key.")
-                click.echo("Set it with --openai-api-key or OPENAI_API_KEY environment variable.")
+                click.echo("Available providers: " + ", ".join(AIProvider.list_providers()))
+
             else:
                 click.echo(f"❌ Ollama responded with status: {response.status}")
                 sys.exit(1)
@@ -397,6 +441,15 @@ async def check_ollama(host: str, port: int, check_vision: bool) -> None:
         click.echo(f"❌ Error connecting to Ollama: {e}")
         click.echo(f"Make sure Ollama is running on {host}:{port}")
         sys.exit(1)
+
+
+@cli.command()
+def list_providers() -> None:
+    """List all available AI providers."""
+    providers = AIProvider.list_providers()
+    click.echo("Available AI providers:")
+    for provider in providers:
+        click.echo(f"  - {provider}")
 
 
 @cli.command()

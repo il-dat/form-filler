@@ -11,8 +11,9 @@ from typing import Any
 
 from crewai.tools import BaseTool
 from docx import Document
-from langchain_ollama import ChatOllama
+from pydantic import Field, PrivateAttr
 
+from form_filler.ai_providers import AIProviderFactory
 from form_filler.tools.form_analysis_tool import FormAnalysisTool
 
 # Setup logging
@@ -24,12 +25,58 @@ class FormFillingTool(BaseTool):
 
     name: str = "form_filler"
     description: str = "Fill DOCX form fields with provided content"
-    llm: ChatOllama | None = None
 
-    def __init__(self, model: str = "llama3.2:3b", *args: Any, **kwargs: Any) -> None:
-        """Initialize the object."""
+    # Provider configuration
+    provider_name: str = Field(default="ollama")
+    model_name: str = Field(default="llama3.2:3b")
+    api_key: str | None = Field(default=None)
+    api_base: str | None = Field(default=None)
+
+    # Private attribute for AI provider
+    _ai_provider = PrivateAttr(default=None)  # Will hold AIProvider instance
+
+    def __init__(
+        self,
+        provider_name: str = "ollama",
+        model_name: str = "llama3.2:3b",
+        api_key: str | None = None,
+        api_base: str | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the form filling tool.
+
+        Args:
+            provider_name: The name of the AI provider (ollama, openai, anthropic, etc.)
+            model_name: The name of the model to use
+            api_key: API key for the provider (if needed)
+            api_base: Base URL for the API (if needed)
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
+        # Support for legacy parameters
+        if "model" in kwargs and model_name == "llama3.2:3b":
+            model_name = kwargs.pop("model")
+
+        # Set parameters
+        kwargs["provider_name"] = provider_name
+        kwargs["model_name"] = model_name
+        kwargs["api_key"] = api_key
+        kwargs["api_base"] = api_base
+
         super().__init__(*args, **kwargs)
-        self.llm = ChatOllama(model=model, base_url="http://localhost:11434")
+
+        # Initialize AI provider
+        try:
+            self._ai_provider = AIProviderFactory.create_provider(
+                provider_name=self.provider_name,
+                model_name=self.model_name,
+                api_key=self.api_key,
+                api_base=self.api_base,
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize AI provider: {e}")
+            self._ai_provider = None
 
     def _run(
         self,
@@ -38,7 +85,20 @@ class FormFillingTool(BaseTool):
         output_path: str,
         field_mappings: str | None = None,
     ) -> str:
-        """Fill the form with mapped content."""
+        """Fill the form with mapped content.
+
+        Args:
+            form_path: Path to the form template
+            translated_text: Translated content to fill in the form
+            output_path: Path to save the filled form
+            field_mappings: Optional JSON string with field mappings
+
+        Returns:
+            JSON string with information about the filled form
+
+        Raises:
+            Exception: If form filling fails
+        """
         try:
             doc = Document(form_path)
 
@@ -99,7 +159,22 @@ class FormFillingTool(BaseTool):
             raise
 
     def _generate_field_mappings(self, form_path: str, content: str) -> str:
-        """Generate field mappings using AI."""
+        """Generate field mappings using AI.
+
+        Args:
+            form_path: Path to the form template
+            content: Translated content to fill in the form
+
+        Returns:
+            JSON string with field mappings
+        """
+        # Check if AI provider is initialized
+        if not self._ai_provider:
+            logger.warning("AI provider not initialized, using fallback mapping")
+            form_analyzer = FormAnalysisTool()
+            form_fields = form_analyzer._run(form_path)
+            return self._create_fallback_json(form_fields, content)
+
         # Analyze form structure
         form_analyzer = FormAnalysisTool()
         form_fields = form_analyzer._run(form_path)
@@ -132,12 +207,36 @@ Consider the context and purpose of each field. Return only valid JSON in this f
         ]
 
         try:
-            if not self.llm:
-                raise ValueError("LLM model not initialized")
+            # Use the chat completion method from our AI provider
+            result = self._ai_provider.chat_completion(
+                messages=messages,
+                max_tokens=2000,  # Larger token limit for complex JSON responses
+                temperature=0.2,  # Lower temperature for more consistent JSON
+            )
 
-            response = self.llm.invoke(messages)
-            result = response.content if hasattr(response, "content") else str(response)
-            return str(result)
+            # Validate JSON in the response
+            try:
+                # Try to parse the result as JSON
+                json.loads(result)
+                return result
+            except json.JSONDecodeError:
+                # If response isn't valid JSON, try to extract JSON part
+                if "{" in result and "}" in result:
+                    start = result.find("{")
+                    end = result.rfind("}") + 1
+                    json_str = result[start:end]
+                    try:
+                        json.loads(json_str)
+                        return json_str
+                    except json.JSONDecodeError:
+                        # If extraction fails, use fallback
+                        logger.warning("Failed to extract valid JSON from AI response")
+                        return self._create_fallback_json(form_fields, content)
+                else:
+                    # If no JSON-like content, use fallback
+                    logger.warning("AI response didn't contain valid JSON")
+                    return self._create_fallback_json(form_fields, content)
+
         except Exception as e:
             logger.error(f"AI field mapping failed: {e}")
             return self._create_fallback_json(form_fields, content)

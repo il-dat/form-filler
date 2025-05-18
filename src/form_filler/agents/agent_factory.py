@@ -17,17 +17,19 @@ from form_filler.tools import (
 
 def create_document_collector_agent(
     extraction_method: str = "traditional",
-    vision_model: str = "llava:7b",
-    openai_api_key: str | None = None,
-    openai_model: str = "gpt-4o",
+    provider_name: str = "ollama",
+    model_name: str = "llava:7b",
+    api_key: str | None = None,
+    api_base: str | None = None,
 ) -> Agent:
     """Create the document collection agent.
 
     Args:
-        extraction_method: Method to use for text extraction (traditional, ai, openai)
-        vision_model: Vision model to use for AI text extraction
-        openai_api_key: OpenAI API key for OpenAI extraction method
-        openai_model: OpenAI model for OpenAI extraction method
+        extraction_method: Method to use for text extraction (traditional, ai)
+        provider_name: AI provider to use (ollama, openai, anthropic, etc.)
+        model_name: Model name to use for AI text extraction
+        api_key: API key for the AI provider (if needed)
+        api_base: Base URL for the AI provider API (if needed)
 
     Returns:
         A CrewAI Agent configured for document collection
@@ -42,9 +44,10 @@ def create_document_collector_agent(
         tools=[
             DocumentExtractionTool(
                 extraction_method=extraction_method,
-                vision_model=vision_model,
-                openai_api_key=openai_api_key,
-                openai_model=openai_model,
+                provider_name=provider_name,
+                model_name=model_name,
+                api_key=api_key,
+                api_base=api_base,
             ),
         ],
         verbose=True,
@@ -52,11 +55,19 @@ def create_document_collector_agent(
     )
 
 
-def create_translator_agent(model: str = "llama3.2:3b") -> Agent:
+def create_translator_agent(
+    provider_name: str = "ollama",
+    model_name: str = "llama3.2:3b",
+    api_key: str | None = None,
+    api_base: str | None = None,
+) -> Agent:
     """Create the translation agent.
 
     Args:
-        model: Ollama model to use for translation
+        provider_name: AI provider to use (ollama, openai, anthropic, etc.)
+        model_name: Model name to use for translation
+        api_key: API key for the AI provider (if needed)
+        api_base: Base URL for the AI provider API (if needed)
 
     Returns:
         A CrewAI Agent configured for text translation
@@ -67,7 +78,14 @@ def create_translator_agent(model: str = "llama3.2:3b") -> Agent:
         backstory="""You are a professional translator with deep expertise in Vietnamese and English languages.
         You specialize in translating official documents, forms, and business communications while preserving
         the original meaning and maintaining formal language appropriate for document processing.""",
-        tools=[TranslationTool(model=model)],
+        tools=[
+            TranslationTool(
+                provider_name=provider_name,
+                model_name=model_name,
+                api_key=api_key,
+                api_base=api_base,
+            )
+        ],
         verbose=True,
         allow_delegation=False,
     )
@@ -91,11 +109,19 @@ def create_form_analyst_agent() -> Agent:
     )
 
 
-def create_form_filler_agent(model: str = "llama3.2:3b") -> Agent:
+def create_form_filler_agent(
+    provider_name: str = "ollama",
+    model_name: str = "llama3.2:3b",
+    api_key: str | None = None,
+    api_base: str | None = None,
+) -> Agent:
     """Create the form filling agent.
 
     Args:
-        model: Ollama model to use for form filling
+        provider_name: AI provider to use (ollama, openai, anthropic, etc.)
+        model_name: Model name to use for form filling
+        api_key: API key for the AI provider (if needed)
+        api_base: Base URL for the AI provider API (if needed)
 
     Returns:
         A CrewAI Agent configured for form filling
@@ -106,7 +132,14 @@ def create_form_filler_agent(model: str = "llama3.2:3b") -> Agent:
         backstory="""You are a form completion specialist with the ability to understand document context
         and intelligently map translated content to appropriate form fields. You ensure accuracy and
         maintain proper formatting while filling forms.""",
-        tools=[FormFillingTool(model=model)],
+        tools=[
+            FormFillingTool(
+                provider_name=provider_name,
+                model_name=model_name,
+                api_key=api_key,
+                api_base=api_base,
+            )
+        ],
         verbose=True,
         allow_delegation=False,
     )

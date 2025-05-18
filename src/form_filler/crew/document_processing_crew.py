@@ -25,31 +25,57 @@ logger = logging.getLogger(__name__)
 class DocumentProcessingCrew:
     """Main CrewAI crew for document processing."""
 
-    def __init__(  # noqa: D107
+    def __init__(
         self,
-        text_model: str = "llama3.2:3b",
         extraction_method: str = "traditional",
+        provider_name: str = "ollama",
+        text_model: str = "llama3.2:3b",
         vision_model: str = "llava:7b",
-        openai_api_key: str | None = None,
-        openai_model: str = "gpt-4o",
+        api_key: str | None = None,
+        api_base: str | None = None,
     ):
+        """Initialize the document processing crew.
+
+        Args:
+            extraction_method: Method to use for extraction (traditional, ai)
+            provider_name: AI provider to use (ollama, openai, anthropic, etc.)
+            text_model: Model name to use for text-based tasks
+            vision_model: Model name to use for vision-based tasks
+            api_key: API key for the AI provider (if needed)
+            api_base: Base URL for the AI provider API (if needed)
+        """
         # Create agents
         self.document_collector = create_document_collector_agent(
             extraction_method=extraction_method,
-            vision_model=vision_model,
-            openai_api_key=openai_api_key,
-            openai_model=openai_model,
+            provider_name=provider_name,
+            model_name=vision_model,
+            api_key=api_key,
+            api_base=api_base,
         )
-        self.translator = create_translator_agent(text_model)
+
+        self.translator = create_translator_agent(
+            provider_name=provider_name,
+            model_name=text_model,
+            api_key=api_key,
+            api_base=api_base,
+        )
+
         self.form_analyst = create_form_analyst_agent()
-        self.form_filler = create_form_filler_agent(text_model)
+
+        self.form_filler = create_form_filler_agent(
+            provider_name=provider_name,
+            model_name=text_model,
+            api_key=api_key,
+            api_base=api_base,
+        )
 
         # Store configuration
         self.extraction_method = extraction_method
+        self.provider_name = provider_name
         self.text_model = text_model
         self.vision_model = vision_model
-        self.openai_api_key = openai_api_key
-        self.openai_model = openai_model
+        self.api_key = api_key
+        self.api_base = api_base
 
     def process_document(
         self,
@@ -57,15 +83,22 @@ class DocumentProcessingCrew:
         form_path: str,
         output_path: str,
     ) -> ProcessingResult:
-        """Process a document through the CrewAI pipeline."""
+        """Process a document through the CrewAI pipeline.
+
+        Args:
+            source_path: Path to the source document
+            form_path: Path to the form template
+            output_path: Path to save the filled form
+
+        Returns:
+            ProcessingResult object containing success status and result data
+        """
         try:
             # Define tasks
             # Determine extraction method description for task
             extraction_method_desc = "traditional OCR methods"
             if self.extraction_method == "ai":
                 extraction_method_desc = "AI vision models"
-            elif self.extraction_method == "openai":
-                extraction_method_desc = "OpenAI Vision API"
 
             extraction_task = Task(
                 description=f"""Extract all text content from the Vietnamese document at: {source_path}
@@ -141,6 +174,9 @@ class DocumentProcessingCrew:
             logger.info("Starting CrewAI document processing pipeline")
             logger.info(f"Source: {source_path}, Form: {form_path}, Output: {output_path}")
             logger.info(f"Extraction method: {self.extraction_method}")
+            logger.info(f"Provider: {self.provider_name}")
+            logger.info(f"Text model: {self.text_model}")
+            logger.info(f"Vision model: {self.vision_model}")
 
             result = crew.kickoff()
 
@@ -156,13 +192,11 @@ class DocumentProcessingCrew:
                     data=final_result,
                     metadata={
                         "extraction_method": self.extraction_method,
+                        "provider_name": self.provider_name,
                         "text_model": self.text_model,
-                        "vision_model": (
-                            self.vision_model if self.extraction_method == "ai" else None
-                        ),
-                        "openai_model": (
-                            self.openai_model if self.extraction_method == "openai" else None
-                        ),
+                        "vision_model": self.vision_model
+                        if self.extraction_method == "ai"
+                        else None,
                     },
                 )
             except json.JSONDecodeError:
@@ -172,13 +206,11 @@ class DocumentProcessingCrew:
                     data={"output_path": output_path, "result": str(result)},
                     metadata={
                         "extraction_method": self.extraction_method,
+                        "provider_name": self.provider_name,
                         "text_model": self.text_model,
-                        "vision_model": (
-                            self.vision_model if self.extraction_method == "ai" else None
-                        ),
-                        "openai_model": (
-                            self.openai_model if self.extraction_method == "openai" else None
-                        ),
+                        "vision_model": self.vision_model
+                        if self.extraction_method == "ai"
+                        else None,
                     },
                 )
 
