@@ -35,12 +35,7 @@ jobs:
 
     - name: Lint with Ruff
       run: |
-        uv run poe ruff-check
-        uv run poe ruff-format --check
-
-    - name: Type check with mypy
-      run: |
-        uv run mypy src/form_filler
+        uv run poe full-lint
 
     - name: Run unit tests
       run: |
