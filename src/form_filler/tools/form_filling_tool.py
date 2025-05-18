@@ -11,7 +11,7 @@ from typing import Any
 
 from crewai.tools import BaseTool
 from docx import Document
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 
 from form_filler.tools.form_analysis_tool import FormAnalysisTool
 
