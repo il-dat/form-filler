@@ -139,7 +139,7 @@ def test_process_command_success(runner, mock_processing_result_success):
                 extraction_method="traditional",
                 vision_model="llava:7b",  # Default value
                 openai_api_key=None,  # Default value
-                openai_model="gpt-4-vision-preview",  # Default value
+                openai_model="gpt-4o",  # Default value
             )
             mock_instance.process_document.assert_called_once_with(
                 source_file.name,
@@ -292,7 +292,7 @@ def test_extract_command(runner):
                 extraction_method="traditional",
                 vision_model="llava:7b",  # Default value
                 openai_api_key=None,
-                openai_model="gpt-4-vision-preview",
+                openai_model="gpt-4o",
             )
             mock_instance._run.assert_called_once_with(source_file.name)
     finally:

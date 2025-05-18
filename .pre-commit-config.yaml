@@ -19,8 +19,8 @@ repos:
     rev: v8.18.1
     hooks:
       - id: gitleaks
-        # Use custom config if it exists
-        args: ["--config", ".gitleaks.toml"]
+        # Use config from pyproject.toml
+        args: ["--config", "pyproject.toml"]
         # This allows the hook to pass even if the config file doesn't exist yet
         pass_filenames: false
 
@@ -31,16 +31,6 @@ repos:
       - id: detect-aws-credentials
         args: ['--allow-missing-credentials']
 
-  # Python linting and formatting with Ruff
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.4
-    hooks:
-      # Run the linter
-      - id: ruff
-        args: [--fix]
-      # Run the formatter
-      - id: ruff-format
-
   # Python security check
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.9
@@ -48,3 +38,14 @@ repos:
       - id: bandit
         args: ['-c', 'pyproject.toml']
         additional_dependencies: ['bandit[toml]']
+
+  # Custom full-lint script (runs all linting checks at once)
+  - repo: local
+    hooks:
+      - id: full-lint
+        name: Full Lint
+        description: Runs all linting checks (ruff, ruff-format, bandit)
+        entry: scripts/full-lint.sh
+        language: script
+        pass_filenames: false
+        types: [python]

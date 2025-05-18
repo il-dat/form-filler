@@ -13,6 +13,7 @@ This document provides a complete reference for using the Form Filler command li
   - [translate](#translate)
   - [analyze](#analyze)
   - [fill](#fill)
+  - [block-telemetry](#block-telemetry)
 - [Batch Processing](#batch-processing)
 - [Environment Variables](#environment-variables)
 - [Return Codes](#return-codes)
@@ -31,31 +32,18 @@ form-filler [COMMAND] [OPTIONS]
 
 ## Global Options
 
-| Option          | Description                                      |
-|-----------------|--------------------------------------------------|
-| `--version`     | Display version information and exit.            |
-| `--help`        | Display help text for the command.               |
-| `--verbose`     | Enable verbose output for detailed logging.      |
+| Option                 | Description                                      |
+|-----------------------|--------------------------------------------------|
+| `--version`            | Display version information and exit.            |
+| `--help`               | Display help text for the command.               |
+| `--verbose`, `-v`      | Enable verbose output for detailed logging.      |
+| `--model`, `-m`        | Ollama model to use for translation and form filling (default: llama3.2:3b) |
+| `--extraction-method`, `-e` | Text extraction method: traditional, ai, or openai (default: traditional) |
+| `--vision-model`, `-vm` | Vision model for AI extraction (default: llava:7b) |
+| `--openai-api-key`     | OpenAI API key for OpenAI extraction method      |
+| `--openai-model`       | OpenAI model for OpenAI extraction method        |
 
 All commands display a progress bar or spinner while they are executing, providing visual feedback during long-running operations.
-
-## AI Provider Options
-
-These options control which AI provider is used for operations that require AI capabilities:
-
-| Option           | Description                                       |
-|------------------|---------------------------------------------------|
-| `--provider`     | AI provider to use (default: "ollama").           |
-| `--api-key`      | API key for the AI provider (if needed).          |
-| `--api-base`     | Base URL for the AI provider API (if custom).     |
-| `--model`        | Model name to use with the selected provider.     |
-
-Available providers:
-- `ollama`: Local models via Ollama
-- `openai`: OpenAI models (GPT-3.5, GPT-4, etc.)
-- `anthropic`: Anthropic Claude models
-- `deepseek`: DeepSeek AI models
-- `gemini`: Google Gemini models
 
 ## Commands
 
@@ -72,28 +60,17 @@ form-filler process [OPTIONS] [INPUT_FILE] [FORM_FILE] [OUTPUT_FILE]
 | Option           | Description                                            |
 |------------------|--------------------------------------------------------|
 | `--model`        | LLM model to use (default: "llama3.2:3b").             |
-| `--provider`     | AI provider to use (default: "ollama").                |
-| `--api-key`      | API key for the AI provider (if needed).               |
-| `--api-base`     | Base URL for the AI provider API (if custom).          |
+| `--openai`       | Use OpenAI models instead of local Ollama.             |
 | `--translate`    | Translate the input document if it's in Vietnamese.    |
 
 #### Examples:
 
 ```bash
-# Process a document using default Ollama model
-form-filler process scan.pdf form.docx output.docx
+# Using local AI extraction with Ollama:
+form-filler -e ai -vm llava:7b process document.pdf form.docx output.docx
 
-# Process with translation
-form-filler process vietnamese_doc.png form.docx output.docx --translate
-
-# Process using OpenAI models
-form-filler process scan.pdf form.docx output.docx --provider openai --api-key your_api_key --model gpt-4
-
-# Process using Anthropic Claude
-form-filler process scan.pdf form.docx output.docx --provider anthropic --api-key your_api_key --model claude-3-opus-20240229
-
-# Process using Google Gemini
-form-filler process scan.pdf form.docx output.docx --provider gemini --api-key your_api_key --model gemini-1.5-pro
+# Using OpenAI API:
+form-filler -e openai --openai-api-key YOUR_API_KEY process document.pdf form.docx output.docx
 ```
 
 ### `extract`
@@ -109,26 +86,18 @@ form-filler extract [OPTIONS] [INPUT_FILE]
 | Option           | Description                                            |
 |------------------|--------------------------------------------------------|
 | `--model`        | LLM model to use (default: "llama3.2:3b").             |
-| `--provider`     | AI provider to use (default: "ollama").                |
-| `--api-key`      | API key for the AI provider (if needed).               |
-| `--api-base`     | Base URL for the AI provider API (if custom).          |
+| `--openai`       | Use OpenAI models instead of local Ollama.             |
 | `--method`       | Extraction method: "traditional", "ai", or "auto" (default).  |
 | `--output`       | Output file to save the extracted text (optional).     |
 
 #### Examples:
 
 ```bash
-# Extract text from a PDF
-form-filler extract document.pdf
+# Using local AI extraction with Ollama:
+form-filler -e ai -vm llava:7b extract document.pdf
 
-# Extract with specific method and save to file
-form-filler extract receipt.png --method ai --output extracted.txt
-
-# Extract using OpenAI
-form-filler extract document.pdf --provider openai --api-key your_api_key --model gpt-4-vision-preview
-
-# Extract using DeepSeek
-form-filler extract document.pdf --provider deepseek --api-key your_api_key --model deepseek-vision-large
+# Using OpenAI API:
+form-filler -e openai --openai-api-key YOUR_API_KEY extract document.pdf
 ```
 
 ### `translate`
@@ -144,26 +113,17 @@ form-filler translate [OPTIONS] [INPUT_TEXT_OR_FILE]
 | Option           | Description                                            |
 |------------------|--------------------------------------------------------|
 | `--model`        | LLM model to use (default: "llama3.2:3b").             |
-| `--provider`     | AI provider to use (default: "ollama").                |
-| `--api-key`      | API key for the AI provider (if needed).               |
-| `--api-base`     | Base URL for the AI provider API (if custom).          |
 | `--output`       | Output file to save the translated text (optional).    |
 | `--file`         | Treat input as a file path instead of raw text.        |
 
 #### Examples:
 
 ```bash
-# Translate a piece of text
-form-filler translate "Xin chào từ Việt Nam"
+# Basic usage:
+form-filler translate "Xin chào"
 
-# Translate content from a file
-form-filler translate vietnamese_text.txt --file
-
-# Translate to a specific file
-form-filler translate input.txt --file --output translated.txt
-
-# Translate using a specific provider
-form-filler translate vietnamese_text.txt --file --provider openai --api-key your_api_key --model gpt-4
+# Using specific model:
+form-filler -m gemma:2b translate "Xin chào từ Việt Nam"
 ```
 
 ### `analyze`
@@ -203,9 +163,6 @@ form-filler fill [OPTIONS] [FORM_FILE] [CONTENT] [OUTPUT_FILE]
 | Option           | Description                                            |
 |------------------|--------------------------------------------------------|
 | `--model`        | LLM model to use (default: "llama3.2:3b").             |
-| `--provider`     | AI provider to use (default: "ollama").                |
-| `--api-key`      | API key for the AI provider (if needed).               |
-| `--api-base`     | Base URL for the AI provider API (if custom).          |
 | `--mappings`     | JSON file with field mappings (optional).              |
 | `--from-file`    | Read content from file instead of command line.        |
 
@@ -220,9 +177,73 @@ form-filler fill form.docx content.txt filled.docx --from-file
 
 # Fill with custom field mappings
 form-filler fill form.docx content.txt filled.docx --from-file --mappings mappings.json
+```
 
-# Fill using Anthropic Claude for advanced understanding
-form-filler fill form.docx content.txt filled.docx --from-file --provider anthropic --api-key your_api_key --model claude-3-haiku-20240307
+## Check Ollama Server Status
+
+You can verify your Ollama server status using the `check-ollama` command:
+
+```bash
+form-filler check-ollama [OPTIONS]
+```
+
+#### Options:
+
+| Option           | Description                                    |
+|------------------|------------------------------------------------|
+| `--host`         | Ollama host (default: localhost)               |
+| `--port`         | Ollama port (default: 11434)                   |
+| `--check-vision` | Also check for vision models                   |
+
+#### Examples:
+
+```bash
+# Basic check for Ollama:
+form-filler check-ollama
+
+# Check for vision models too:
+form-filler check-ollama --check-vision
+
+# Connect to remote Ollama:
+form-filler check-ollama --host remote-server --port 11434
+```
+
+### `block-telemetry`
+
+Block telemetry and tracking completely to enhance privacy protection.
+
+```bash
+form-filler block-telemetry [OPTIONS]
+```
+
+#### Options:
+
+| Option           | Description                                    |
+|------------------|------------------------------------------------|
+| `--debug`        | Enable debug logging for network requests      |
+
+#### Examples:
+
+```bash
+# Block telemetry (standard mode):
+form-filler block-telemetry
+
+# Block telemetry with debug logging:
+form-filler block-telemetry --debug
+```
+
+This command uses advanced techniques to prevent CrewAI and LangChain from sending telemetry data by patching network functions and endpoints. When activated, it:
+
+- Sets environment variables to opt out of tracking
+- Blocks all network requests to telemetry servers
+- Patches internal telemetry functions
+
+The blocking is active for the current session only. For permanent configuration, add the following environment variables to your shell profile:
+
+```bash
+export CREWAI_DO_NOT_TRACK="true"
+export LANGCHAIN_TRACING_V2="false"
+export LANGCHAIN_TRACKING="false"
 ```
 
 ## Batch Processing
@@ -230,7 +251,7 @@ form-filler fill form.docx content.txt filled.docx --from-file --provider anthro
 For batch processing multiple documents, use the `batch` subcommand:
 
 ```bash
-form-filler batch [OPTIONS] [BATCH_CONFIG_FILE]
+form-filler-batch [OPTIONS] [BATCH_CONFIG_FILE]
 ```
 
 #### Options:
@@ -238,9 +259,7 @@ form-filler batch [OPTIONS] [BATCH_CONFIG_FILE]
 | Option           | Description                                            |
 |------------------|--------------------------------------------------------|
 | `--model`        | LLM model to use (default: "llama3.2:3b").             |
-| `--provider`     | AI provider to use (default: "ollama").                |
-| `--api-key`      | API key for the AI provider (if needed).               |
-| `--api-base`     | Base URL for the AI provider API (if custom).          |
+| `--openai`       | Use OpenAI models instead of local Ollama.             |
 | `--output-dir`   | Directory to save output files (default: current dir). |
 
 #### Batch Configuration Format:
@@ -252,23 +271,16 @@ form-filler batch [OPTIONS] [BATCH_CONFIG_FILE]
       "input_file": "document1.pdf",
       "form_file": "form1.docx",
       "output_file": "output1.docx",
-      "translate": true,
-      "provider": "anthropic",
-      "model": "claude-3-haiku-20240307",
-      "api_key": "your_api_key"
+      "translate": true
     },
     {
       "input_file": "document2.png",
       "form_file": "form2.docx",
-      "output_file": "output2.docx",
-      "provider": "ollama",
-      "model": "llama3.2:3b"
+      "output_file": "output2.docx"
     }
   ]
 }
 ```
-
-You can specify AI provider settings for each job individually, or use the command-line options to set defaults for all jobs.
 
 #### Example:
 
@@ -276,14 +288,8 @@ You can specify AI provider settings for each job individually, or use the comma
 # Process a batch of documents
 form-filler batch batch_config.json
 
-# Process with OpenAI models
-form-filler batch batch_config.json --provider openai --api-key your_api_key --model gpt-4 --output-dir ./processed
-
-# Process with DeepSeek models
-form-filler batch batch_config.json --provider deepseek --api-key your_api_key --model deepseek-chat-v2 --output-dir ./processed
-
-# Process with Gemini models
-form-filler batch batch_config.json --provider gemini --api-key your_api_key --model gemini-1.5-pro-latest --output-dir ./processed
+# Process with OpenAI models and specific output directory
+form-filler batch batch_config.json --openai --output-dir ./processed
 ```
 
 ## Environment Variables
@@ -293,11 +299,12 @@ The following environment variables can be used to configure the Form Filler CLI
 | Variable                | Description                                       |
 |-------------------------|---------------------------------------------------|
 | `FORM_FILLER_MODEL`     | Default LLM model to use.                         |
-| `FORM_FILLER_PROVIDER`  | Default AI provider to use.                       |
-| `FORM_FILLER_API_KEY`   | API key for the configured AI provider.           |
-| `FORM_FILLER_API_BASE`  | Base URL for the AI provider's API.               |
+| `FORM_FILLER_OPENAI_KEY`| OpenAI API key for OpenAI model usage.            |
 | `FORM_FILLER_LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR).      |
 | `FORM_FILLER_OLLAMA_URL`| URL for Ollama API (default: http://localhost:11434). |
+| `CREWAI_DO_NOT_TRACK`   | Set to "true" to disable CrewAI telemetry.        |
+| `LANGCHAIN_TRACING_V2`  | Set to "false" to disable LangChain tracing.      |
+| `LANGCHAIN_TRACKING`    | Set to "false" to disable LangChain tracking.     |
 
 ## Return Codes
 
