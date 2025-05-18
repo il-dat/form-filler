@@ -9,7 +9,7 @@ import logging
 from typing import Any
 
 from crewai.tools import BaseTool
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 
 # Setup logging
 logger = logging.getLogger(__name__)
