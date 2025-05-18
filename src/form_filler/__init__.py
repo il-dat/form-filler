@@ -20,11 +20,15 @@ os.environ["CREWAI_DO_NOT_TRACK"] = "true"
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 os.environ["LANGCHAIN_TRACKING"] = "false"
 
-# Import and apply telemetry blocking
+# Import telemetry blocker but only apply it when needed
 try:
+    import sys
+
     from form_filler.utils.telemetry_blocker import block_telemetry
 
-    block_telemetry()
+    # Don't apply telemetry blocking if this is a help command
+    if "--help" not in sys.argv and "-h" not in sys.argv:
+        block_telemetry()
 except Exception as e:
     logging.warning(f"Failed to block telemetry: {e}")
 

@@ -147,7 +147,7 @@ def block_telemetry():
     except (ImportError, AttributeError):
         logger.debug("LangChain tracer not found, skipping patch")
 
-    logger.info("Telemetry blocking enabled")
+    logger.info("Telemetry blocking enabled for privacy protection")
     return patched_functions
 
 
