@@ -12,9 +12,6 @@ import tempfile
 import time
 from pathlib import Path
 
-from batch_processor import BatchProcessor
-from document_processor import DocumentProcessor
-
 from form_filler.batch_processor import CrewAIBatchProcessor
 from form_filler.crew.document_processing_crew import DocumentProcessingCrew
 
@@ -139,12 +136,10 @@ def demo_crewai_agent_capabilities():
     print("🤖 Demo 2: CrewAI Agent Capabilities")
     print("-" * 50)
 
-    from document_processor import (
-        DocumentExtractionTool,
-        FormAnalysisTool,
-        FormFillingTool,
-        TranslationTool,
-    )
+    from form_filler.tools.document_extraction_tool import DocumentExtractionTool
+    from form_filler.tools.form_analysis_tool import FormAnalysisTool
+    from form_filler.tools.form_filling_tool import FormFillingTool
+    from form_filler.tools.translation_tool import TranslationTool
 
     # Create temp files
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as temp_file:
@@ -622,7 +617,7 @@ async def demo_single_document():
         output_path = output_file.name
 
     # Initialize processor
-    processor = DocumentProcessor(ollama_model="llama3.2:3b")
+    processor = DocumentProcessingCrew(text_model="llama3.2:3b")
 
     print("📄 Processing Vietnamese CV...")
     print(f"Source: {Path(source_path).name}")
@@ -653,72 +648,8 @@ async def demo_single_document():
     print("\n")
 
 
-async def demo_agent_pipeline():
-    """Demonstrate individual agent usage."""
-    print("🔹 Demo 2: Individual Agent Pipeline")
-    print("-" * 40)
-
-    from document_processor import DocumentCollectorAgent, FormFillerAgent, TranslatorAgent
-
-    # Create agents
-    collector = DocumentCollectorAgent()
-    translator = TranslatorAgent()
-    filler = FormFillerAgent()
-
-    # Create temp files
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as temp_file:
-        temp_file.write(SAMPLE_VIETNAMESE_TEXT)
-        temp_path = temp_file.name
-
-    print("🔧 Step 1: Document Collection")
-    collection_result = await collector.process(temp_path)
-    if collection_result.success:
-        print(f"✅ Extracted {len(collection_result.data)} characters")
-        vietnamese_text = collection_result.data[:100] + "..."
-        print(f"📝 Sample: {vietnamese_text}")
-    else:
-        print(f"❌ Failed: {collection_result.error}")
-        return
-
-    print("\n🔧 Step 2: Translation")
-    translation_result = await translator.process(collection_result.data)
-    if translation_result.success:
-        print("✅ Translation completed")
-        english_text = translation_result.data[:100] + "..."
-        print(f"📝 Sample: {english_text}")
-    else:
-        print(f"❌ Failed: {translation_result.error}")
-        return
-
-    print("\n🔧 Step 3: Form Filling")
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as form_file:
-        form_file.write(SAMPLE_FORM_CONTENT)
-        form_path = form_file.name
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as output_file:
-        output_path = output_file.name
-
-    filling_result = await filler.process(
-        {
-            "form_path": form_path,
-            "translated_text": translation_result.data,
-            "output_path": output_path,
-        },
-    )
-
-    if filling_result.success:
-        print("✅ Form filling completed")
-        print(f"📊 Fields filled: {filling_result.metadata.get('filled_count', 'N/A')}")
-    else:
-        print(f"❌ Failed: {filling_result.error}")
-
-    # Cleanup
-    Path(temp_path).unlink()
-    Path(form_path).unlink()
-    if Path(output_path).exists():
-        Path(output_path).unlink()
-
-    print("\n")
+# Skip this function as the individual agents have been replaced by CrewAI tools
+# This function is equivalent to demo_crewai_agent_capabilities
 
 
 async def demo_batch_processing():
@@ -754,7 +685,7 @@ async def demo_batch_processing():
     print(f"Output directory: {output_dir}")
 
     # Initialize batch processor
-    batch_processor = BatchProcessor(model="llama3.2:3b", max_concurrent=2, timeout=60)
+    batch_processor = CrewAIBatchProcessor(text_model="llama3.2:3b", max_concurrent=2, timeout=60)
 
     # Discover jobs
     job_count = batch_processor.discover_jobs(
@@ -797,7 +728,7 @@ async def demo_error_handling():
     print("🔹 Demo 4: Error Handling")
     print("-" * 40)
 
-    processor = DocumentProcessor(ollama_model="llama3.2:3b")
+    processor = DocumentProcessingCrew(text_model="llama3.2:3b")
 
     # Test 1: Non-existent file
     print("🧪 Test 1: Non-existent source file")
@@ -864,50 +795,84 @@ def demo_configuration():
     print("\n")
 
 
-async def main():
-    """Run all demos."""
-    print("🚀 Vietnamese Document Form Filler - Demo")
-    print("=" * 50)
-    print("This demo showcases the capabilities of the multi-agent")
+def main():
+    """Run CrewAI demos."""
+    print("🚀 Vietnamese Document Form Filler - CrewAI Demo")
+    print("=" * 60)
+    print("This demo showcases the CrewAI-powered multi-agent")
     print("document processing system.\n")
 
-    # Check if Ollama is available
-    print("🔍 Checking system requirements...")
+    # Check if CrewAI and Ollama are available
+    print("🔍 Checking CrewAI system requirements...")
     try:
+        import crewai
+
+        print(f"✅ CrewAI installed: v{crewai.__version__}")
+
+        # Check if crewai_tools is available
+        try:
+            import crewai_tools  # noqa
+
+            print("✅ CrewAI Tools available")
+        except ImportError:
+            print("⚠️ CrewAI Tools not available")
+
+        # Check Ollama
         import aiohttp
 
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(
-                "http://localhost:11434/api/tags",
-            ) as response,
-        ):
-            if response.status == 200:
-                print("✅ Ollama is running")
-                data = await response.json()
-                models = [m["name"] for m in data.get("models", [])]
-                print(f"Available models: {', '.join(models[:3])}...")
-            else:
-                print("❌ Ollama is not responding")
-                print("Please ensure Ollama is installed and running")
-                return
+        async def check_ollama():
+            try:
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(
+                        "http://localhost:11434/api/tags",
+                    ) as response,
+                ):
+                    if response.status == 200:
+                        print("✅ Ollama is running")
+                        data = await response.json()
+                        models = [m["name"] for m in data.get("models", [])]
+                        print(f"Available models: {', '.join(models[:3])}...")
+                        return True
+                    else:
+                        print("❌ Ollama is not responding")
+                        return False
+            except Exception as e:
+                print(f"❌ Cannot connect to Ollama: {e}")
+                return False
+
+        asyncio.run(check_ollama())
+
+    except ImportError as e:
+        print(f"❌ CrewAI not properly installed: {e}")
+        print("Install with: pip install crewai crewai-tools langchain langchain-community")
+        return
     except Exception as e:
-        print(f"❌ Cannot connect to Ollama: {e}")
-        print("This demo requires Ollama to be running")
+        print(f"❌ System check failed: {e}")
+        print("This demo requires CrewAI and Ollama to be running")
         return
 
     print("\n")
 
-    # Run demos
-    await demo_single_document()
-    await demo_agent_pipeline()
-    await demo_batch_processing()
-    await demo_error_handling()
-    demo_configuration()
+    # Run CrewAI demos
+    demo_crewai_single_document()
+    demo_crewai_agent_capabilities()
+    demo_crewai_batch_processing()
+    demo_crewai_extraction_methods()
+    demo_crewai_error_handling()
+    demo_crewai_configuration()
 
-    print("🎉 Demo completed!")
-    print("Try the CLI commands for more features.")
+    print("🎉 CrewAI Demo completed!")
+    print("\n🤖 CrewAI Advantages Summary:")
+    print("   ✅ Structured agent collaboration")
+    print("   ✅ Built-in error handling and retries")
+    print("   ✅ Task dependency management")
+    print("   ✅ Enhanced observability and logging")
+    print("   ✅ Scalable parallel processing")
+    print("   ✅ Easy configuration and customization")
+    print("   ✅ Multiple extraction methods (Traditional, AI, OpenAI)")
+    print("\nTry the CLI commands for full CrewAI features!")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()  # No need for asyncio.run as it's not an async function
