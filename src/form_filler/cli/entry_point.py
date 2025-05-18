@@ -41,6 +41,13 @@ def check_ollama(host: str, port: int, check_vision: bool) -> None:
 
 def main() -> None:
     """Main entry point for the CLI."""
+    import os
+
+    # Ensure tracking and telemetry are disabled
+    os.environ["CREWAI_DO_NOT_TRACK"] = "true"
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    os.environ["LANGCHAIN_TRACKING"] = "false"
+
     try:
         cli(standalone_mode=False)
     except click.exceptions.Abort:

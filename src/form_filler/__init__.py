@@ -6,7 +6,15 @@ A CrewAI-based multi-agent system for processing Vietnamese documents and fillin
 """
 
 import logging
+import os
 
+# Disable tracking and telemetry
+os.environ["CREWAI_DO_NOT_TRACK"] = "true"
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["LANGCHAIN_TRACKING"] = "false"
+
+# Import after setting environment variables
+# ruff: noqa: E402
 from form_filler.agents import (
     create_document_collector_agent,
     create_form_analyst_agent,
